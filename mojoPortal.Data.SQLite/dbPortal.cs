@@ -758,32 +758,63 @@ namespace mojoPortal.Data
             return result;
         }
 
-		public static bool DatabaseHelperUpdateTableField(
-			String connectionString,
-			String tableName, 
-			String keyFieldName,
-			String keyFieldValue,
-			String dataFieldName, 
-			String dataFieldValue,
-			String additionalWhere)
-		{
-			bool result = false;
+        public static bool DatabaseHelperUpdateTableField(
+            String connectionString,
+            String tableName, 
+            String keyFieldName,
+            String keyFieldValue,
+            String dataFieldName, 
+            String dataFieldValue,
+            String additionalWhere)
+        {
+            bool result = false;
 
-			StringBuilder sqlCommand = new StringBuilder();
-			sqlCommand.Append("UPDATE " + tableName + " ");
-			sqlCommand.Append(" SET " + dataFieldName + " = :fieldValue ");
-			sqlCommand.Append(" WHERE " + keyFieldName + " = " + keyFieldValue );
-			sqlCommand.Append(" " + additionalWhere + " ");
-			sqlCommand.Append(" ; ");
-			
-			SqliteParameter[] arParams = new SqliteParameter[1];
+            StringBuilder sqlCommand = new StringBuilder();
+            sqlCommand.Append("UPDATE " + tableName + " ");
+            sqlCommand.Append(" SET " + dataFieldName + " = :fieldValue ");
+            sqlCommand.Append(" WHERE " + keyFieldName + " = " + keyFieldValue );
+            sqlCommand.Append(" " + additionalWhere + " ");
+            sqlCommand.Append(" ; ");
+            
+            SqliteParameter[] arParams = new SqliteParameter[1];
 
-			arParams[0] = new SqliteParameter(":fieldValue", DbType.String);
-			arParams[0].Direction = ParameterDirection.Input;
-			arParams[0].Value = dataFieldValue;
+            arParams[0] = new SqliteParameter(":fieldValue", DbType.String);
+            arParams[0].Direction = ParameterDirection.Input;
+            arParams[0].Value = dataFieldValue;
 
-			SqliteConnection connection = new SqliteConnection(connectionString);
-			connection.Open();
+            // Validate and sanitize connection string
+            var builder = new DbConnectionStringBuilder();
+            try
+            {
+                builder.ConnectionString = connectionString;
+            }
+            catch
+            {
+                throw new ArgumentException("Invalid connection string format.");
+            }
+            if (!builder.ContainsKey("Data Source"))
+            {
+                throw new ArgumentException("Connection string must specify Data Source.");
+            }
+            var dataSource = builder["Data Source"].ToString();
+            if (dataSource.Contains(";") || dataSource.Contains("=") || dataSource.Contains(".."))
+            {
+                throw new ArgumentException("Invalid Data Source value.");
+            }
+            var safeBuilder = new DbConnectionStringBuilder();
+            safeBuilder["Data Source"] = dataSource;
+            if (builder.ContainsKey("Version"))
+            {
+                int version;
+                if (int.TryParse(builder["Version"].ToString(), out version))
+                {
+                    safeBuilder["Version"] = version;
+                }
+            }
+            var safeConnectionString = safeBuilder.ConnectionString;
+
+            SqliteConnection connection = new SqliteConnection(safeConnectionString);
+            connection.Open();
             try
             {
                 int rowsAffected = SqliteHelper.ExecuteNonQuery(connection, sqlCommand.ToString(), arParams);
@@ -794,9 +825,8 @@ namespace mojoPortal.Data
                 connection.Close();
             }
 
-			return result;
-			
-		}
+            return result;
+        }
 
         public static bool DatabaseHelperUpdateTableField(
             String tableName,
