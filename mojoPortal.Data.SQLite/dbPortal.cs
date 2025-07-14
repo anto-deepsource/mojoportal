@@ -770,32 +770,38 @@ namespace mojoPortal.Data
 			bool result = false;
 
 			StringBuilder sqlCommand = new StringBuilder();
-			sqlCommand.Append("UPDATE " + tableName + " ");
-			sqlCommand.Append(" SET " + dataFieldName + " = :fieldValue ");
-			sqlCommand.Append(" WHERE " + keyFieldName + " = " + keyFieldValue );
-			sqlCommand.Append(" " + additionalWhere + " ");
-			sqlCommand.Append(" ; ");
-			
-			SqliteParameter[] arParams = new SqliteParameter[1];
+			sqlCommand.Append("UPDATE ").Append(tableName).Append(" ");
+			sqlCommand.Append("SET ").Append(dataFieldName).Append(" = :fieldValue ");
+			sqlCommand.Append("WHERE ").Append(keyFieldName).Append(" = :keyFieldValue ");
+			if (!string.IsNullOrEmpty(additionalWhere))
+			{
+				sqlCommand.Append(" ").Append(additionalWhere).Append(" ");
+			}
+			sqlCommand.Append(";");
+
+			SqliteParameter[] arParams = new SqliteParameter[2];
 
 			arParams[0] = new SqliteParameter(":fieldValue", DbType.String);
 			arParams[0].Direction = ParameterDirection.Input;
 			arParams[0].Value = dataFieldValue;
 
+			arParams[1] = new SqliteParameter(":keyFieldValue", DbType.String);
+			arParams[1].Direction = ParameterDirection.Input;
+			arParams[1].Value = keyFieldValue;
+
 			SqliteConnection connection = new SqliteConnection(connectionString);
 			connection.Open();
-            try
-            {
-                int rowsAffected = SqliteHelper.ExecuteNonQuery(connection, sqlCommand.ToString(), arParams);
-                result = (rowsAffected > 0);
-            }
-            finally
-            {
-                connection.Close();
-            }
+			try
+			{
+				int rowsAffected = SqliteHelper.ExecuteNonQuery(connection, sqlCommand.ToString(), arParams);
+				result = (rowsAffected > 0);
+			}
+			finally
+			{
+				connection.Close();
+			}
 
 			return result;
-			
 		}
 
         public static bool DatabaseHelperUpdateTableField(
