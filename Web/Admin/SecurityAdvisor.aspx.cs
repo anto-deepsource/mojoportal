@@ -139,89 +139,87 @@ namespace mojoPortal.Web.AdminUI
 			litSecurityProtocolHeading.Text = string.Format(displaySettings.PanelHeadingMarkup, Resource.SecurityAdvisorSecurityProtocolHeading, Resource.SecurityAdvisorSecurityProtocolDescription);
 		}
 
-		public void SslTest_HowsMySsl()
-		{
-			try
-			{
-				var request = WebRequest.CreateHttp(new Uri("https://howsmyssl.com:443/a/check"));
+                public void SslTest_HowsMySsl()
+                {
+                    try
+                    {
+                        var request = WebRequest.CreateHttp(new Uri("https://howsmyssl.com:443/a/check"));
 
-				ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
+                        WebResponse response = request.GetResponse();
 
-				WebResponse response = request.GetResponse();
+                        Stream dataStream = response.GetResponseStream();
+                        StreamReader reader = new StreamReader(dataStream);
+                        string responseFromServer = reader.ReadToEnd();
 
-				Stream dataStream = response.GetResponseStream();
-				StreamReader reader = new StreamReader(dataStream);
-				string responseFromServer = reader.ReadToEnd();
+                        reader.Close();
+                        response.Close();
 
-				reader.Close();
-				response.Close();
+                        if (WebConfigSettings.SecurityAdvisorLogTLSCheckResponse)
+                        {
+                            log.Info($"SecurityAdvisorTLSCheckResponse:\r\n{responseFromServer}");
+                        }
 
-				if (WebConfigSettings.SecurityAdvisorLogTLSCheckResponse)
-				{
-					log.Info($"SecurityAdvisorTLSCheckResponse:\r\n{responseFromServer}");
-				}
+                        var jObject = JObject.Parse(responseFromServer);
+                        var ciphers = ((JArray)jObject["given_cipher_suites"]).Select(c => (string)c).ToList();
+                        var tlsver = (string)jObject["tls_version"];
+                        var rating = (string)jObject["rating"];
+                        var ekeys = (string)jObject["ephemeral_keys_supported"];
+                        var sticket = (string)jObject["session_ticket_supported"];
+                        var tlscompr = (string)jObject["tls_compression_supported"];
+                        var unknownCiphers = (string)jObject["unknown_cipher_suite_supported"];
+                        var beast = (string)jObject["beast_vuln"];
+                        var n_minus_one_splitting = (string)jObject["able_to_detect_n_minus_one_splitting"];
+                        var insecureCiphers = (JObject)jObject["insecure_cipher_suites"];
 
-				var jObject = JObject.Parse(responseFromServer);
-				var ciphers = ((JArray)jObject["given_cipher_suites"]).Select(c => (string)c).ToList();
-				var tlsver = (string)jObject["tls_version"];
-				var rating = (string)jObject["rating"];
-				var ekeys = (string)jObject["ephemeral_keys_supported"];
-				var sticket = (string)jObject["session_ticket_supported"];
-				var tlscompr = (string)jObject["tls_compression_supported"];
-				var unknownCiphers = (string)jObject["unknown_cipher_suite_supported"];
-				var beast = (string)jObject["beast_vuln"];
-				var n_minus_one_splitting = (string)jObject["able_to_detect_n_minus_one_splitting"];
-				var insecureCiphers = (JObject)jObject["insecure_cipher_suites"];
+                        if (rating == "Bad")
+                        {
+                            rating = "<span class=\"text-danger\">Bad <i class=\"fa fa-exclamation-triangle\" aria-hidden=\"true\"></i></span>";
+                        }
 
-				if (rating == "Bad")
-				{
-					rating = "<span class=\"text-danger\">Bad <i class=\"fa fa-exclamation-triangle\" aria-hidden=\"true\"></i></span>";
-				}
+                        var sb = new StringBuilder();
 
-				var sb = new StringBuilder();
+                        sb.Append($"<strong>{Resource.SecurityAdvisorSecurityProtocolVersion}:</strong> {tlsver}<br/>");
+                        sb.Append($"<strong>{Resource.SecurityAdvisorSecurityProtocolRating}:</strong> {rating}<br/>");
+                        sb.Append($"<strong>{Resource.SecurityAdvisorSecurityProtocolEphemeralKeys}:</strong> {ekeys}<br/>");
+                        sb.Append($"<strong>{Resource.SecurityAdvisorSecurityProtocolTLSCompression}:</strong> {tlscompr}<br/>");
+                        sb.Append($"<strong>{Resource.SecurityAdvisorSecurityProtocolUnknownCiphers}:</strong> {unknownCiphers}<br/>");
+                        sb.Append($"<strong>{Resource.SecurityAdvisorSecurityProtocolBeastVuln}:</strong> {beast}<br/>");
+                        sb.Append($"<strong>{Resource.SecurityAdvisorSecurityProtocolNMinusOneSplitting}:</strong> {n_minus_one_splitting}<br/>");
 
-				sb.Append($"<strong>{Resource.SecurityAdvisorSecurityProtocolVersion}:</strong> {tlsver}<br/>");
-				sb.Append($"<strong>{Resource.SecurityAdvisorSecurityProtocolRating}:</strong> {rating}<br/>");
-				sb.Append($"<strong>{Resource.SecurityAdvisorSecurityProtocolEphemeralKeys}:</strong> {ekeys}<br/>");
-				sb.Append($"<strong>{Resource.SecurityAdvisorSecurityProtocolTLSCompression}:</strong> {tlscompr}<br/>");
-				sb.Append($"<strong>{Resource.SecurityAdvisorSecurityProtocolUnknownCiphers}:</strong> {unknownCiphers}<br/>");
-				sb.Append($"<strong>{Resource.SecurityAdvisorSecurityProtocolBeastVuln}:</strong> {beast}<br/>");
-				sb.Append($"<strong>{Resource.SecurityAdvisorSecurityProtocolNMinusOneSplitting}:</strong> {n_minus_one_splitting}<br/>");
+                        if (insecureCiphers.Count > 0)
+                        {
+                            sb.Append($"<h4 class=\"text-danger\">{Resource.SecurityAdvisorSecurityProtocolInsecureCiphers} <i class=\"fa fa-exclamation-triangle\" aria-hidden=\"true\"></i></h4><ul>");
 
-				if (insecureCiphers.Count > 0)
-				{
-					sb.Append($"<h4 class=\"text-danger\">{Resource.SecurityAdvisorSecurityProtocolInsecureCiphers} <i class=\"fa fa-exclamation-triangle\" aria-hidden=\"true\"></i></h4><ul>");
+                            foreach (var cipher in insecureCiphers)
+                            {
+                                sb.Append($"<li><strong>{cipher.Key}</strong><ul>");
 
-					foreach (var cipher in insecureCiphers)
-					{
-						sb.Append($"<li><strong>{cipher.Key}</strong><ul>");
+                                foreach (var cipherWarning in cipher.Value)
+                                {
+                                    sb.Append($"<li>{(string)cipherWarning}</li>");
+                                }
 
-						foreach (var cipherWarning in cipher.Value)
-						{
-							sb.Append($"<li>{(string)cipherWarning}</li>");
-						}
+                                sb.Append("</ul></li>");
+                            }
 
-						sb.Append("</ul></li>");
-					}
+                            sb.Append("</ul>");
+                        }
 
-					sb.Append("</ul>");
-				}
+                        sb.Append($"<h4>{Resource.SecurityAdvisorSecurityProtocolCiphers}</h4><ul>");
 
-				sb.Append($"<h4>{Resource.SecurityAdvisorSecurityProtocolCiphers}</h4><ul>");
+                        foreach (string cipher in ciphers)
+                        {
+                            sb.Append($"<li>{cipher}</li>");
+                        }
 
-				foreach (string cipher in ciphers)
-				{
-					sb.Append($"<li>{cipher}</li>");
-				}
+                        sb.Append("</ul>");
+                        sb.Append($"<h4>{Resource.SecurityAdvisorSecurityProtocolFullCheckResponse}</h4><pre class='language language-js'><code>{JsonConvert.SerializeObject(jObject, Formatting.Indented)}</code></pre>");
 
-				sb.Append("</ul>");
-				sb.Append($"<h4>{Resource.SecurityAdvisorSecurityProtocolFullCheckResponse}</h4><pre class='language language-js'><code>{JsonConvert.SerializeObject(jObject, Formatting.Indented)}</code></pre>");
-
-				litSecurityProtocolDescription.Text = string.Format(displaySettings.SecurityProtocolCheckResponseMarkup, sb.ToString());
-			}
-			catch (WebException)
-			{ }
-		}
+                        litSecurityProtocolDescription.Text = string.Format(displaySettings.SecurityProtocolCheckResponseMarkup, sb.ToString());
+                    }
+                    catch (WebException)
+                    { }
+                }
 
 
 		private void LoadSettings()
