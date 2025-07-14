@@ -758,32 +758,39 @@ namespace mojoPortal.Data
             return result;
         }
 
-		public static bool DatabaseHelperUpdateTableField(
-			String connectionString,
-			String tableName, 
-			String keyFieldName,
-			String keyFieldValue,
-			String dataFieldName, 
-			String dataFieldValue,
-			String additionalWhere)
-		{
-			bool result = false;
+        public static bool DatabaseHelperUpdateTableField(
+            String connectionString,
+            String tableName, 
+            String keyFieldName,
+            String keyFieldValue,
+            String dataFieldName, 
+            String dataFieldValue,
+            String additionalWhere)
+        {
+            bool result = false;
 
-			StringBuilder sqlCommand = new StringBuilder();
-			sqlCommand.Append("UPDATE " + tableName + " ");
-			sqlCommand.Append(" SET " + dataFieldName + " = :fieldValue ");
-			sqlCommand.Append(" WHERE " + keyFieldName + " = " + keyFieldValue );
-			sqlCommand.Append(" " + additionalWhere + " ");
-			sqlCommand.Append(" ; ");
-			
-			SqliteParameter[] arParams = new SqliteParameter[1];
+            var csSettings = ConfigurationManager.ConnectionStrings[connectionString];
+            if (csSettings == null)
+            {
+                throw new ArgumentException("Invalid connection string name.", nameof(connectionString));
+            }
+            string safeConnectionString = csSettings.ConnectionString;
 
-			arParams[0] = new SqliteParameter(":fieldValue", DbType.String);
-			arParams[0].Direction = ParameterDirection.Input;
-			arParams[0].Value = dataFieldValue;
+            StringBuilder sqlCommand = new StringBuilder();
+            sqlCommand.Append("UPDATE " + tableName + " ");
+            sqlCommand.Append(" SET " + dataFieldName + " = :fieldValue ");
+            sqlCommand.Append(" WHERE " + keyFieldName + " = " + keyFieldValue );
+            sqlCommand.Append(" " + additionalWhere + " ");
+            sqlCommand.Append(" ; ");
+            
+            SqliteParameter[] arParams = new SqliteParameter[1];
 
-			SqliteConnection connection = new SqliteConnection(connectionString);
-			connection.Open();
+            arParams[0] = new SqliteParameter(":fieldValue", DbType.String);
+            arParams[0].Direction = ParameterDirection.Input;
+            arParams[0].Value = dataFieldValue;
+
+            SqliteConnection connection = new SqliteConnection(safeConnectionString);
+            connection.Open();
             try
             {
                 int rowsAffected = SqliteHelper.ExecuteNonQuery(connection, sqlCommand.ToString(), arParams);
@@ -794,9 +801,9 @@ namespace mojoPortal.Data
                 connection.Close();
             }
 
-			return result;
-			
-		}
+            return result;
+            
+        }
 
         public static bool DatabaseHelperUpdateTableField(
             String tableName,
