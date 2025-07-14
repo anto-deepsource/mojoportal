@@ -8,6 +8,7 @@
 
 using System;
 using System.Collections;
+using System.Web;
 using mojoPortal.Business;
 using mojoPortal.Features.UI.EventCalendar;
 using mojoPortal.Web.Framework;
@@ -62,11 +63,11 @@ namespace mojoPortal.Web.EventCalendarUI
                     return;
                 }
 
-                heading.Text = calendarEvent.Title + " - " + calendarEvent.EventDate.ToShortDateString();
+                heading.Text = HttpUtility.HtmlEncode(calendarEvent.Title) + " - " + calendarEvent.EventDate.ToShortDateString();
 
                 Title = SiteUtils.FormatPageTitle(siteSettings, calendarEvent.Title);
 
-                this.litDescription.Text = calendarEvent.Description;
+                this.litDescription.Text = HttpUtility.HtmlEncode(calendarEvent.Description);
                 this.lblStartTime.Text = calendarEvent.StartTime.ToShortTimeString();
                 this.lblEndTime.Text = calendarEvent.EndTime.ToShortTimeString();
 
@@ -90,8 +91,8 @@ namespace mojoPortal.Web.EventCalendarUI
                 {
                     gmap.Visible = false;
                 }
-				lblLocation.Text = calendarEvent.Location;
-				pnlOuterWrap.SetOrAppendCss(config.InstanceCssClass);
+                lblLocation.Text = HttpUtility.HtmlEncode(calendarEvent.Location);
+                pnlOuterWrap.SetOrAppendCss(config.InstanceCssClass);
             }
         }
 

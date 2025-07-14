@@ -90,7 +90,7 @@ namespace mojoPortal.Web.SharedFilesUI
 				}
 				else
 				{
-					lblCurrentDirectory.Text = folder.FolderName;
+					lblCurrentDirectory.Text = HttpUtility.HtmlEncode(folder.FolderName);
 				}
 			}
 			else

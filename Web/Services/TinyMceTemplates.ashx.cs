@@ -88,53 +88,57 @@ namespace mojoPortal.Web.Services
         private void RenderJsonList(HttpContext context)
         {          
             context.Response.ContentEncoding = new UTF8Encoding();
-			context.Response.ContentType = "application/json";
+            context.Response.ContentType = "application/json";
 
-			var templatesOrder = AppConfig.EditorTemplatesOrder.SplitOnCharAndTrim(',');
+            var templatesOrder = AppConfig.EditorTemplatesOrder.SplitOnCharAndTrim(',');
             var collection = new EditorTemplateCollection();
 
-			foreach (var i in templatesOrder)
-			{
+            foreach (var i in templatesOrder)
+            {
 
-				switch (i)
-				{
-					case "site":
+                switch (i)
+                {
+                    case "site":
 
-						//collection.ImagesPath = $"{siteRoot}/Data/Sites/{siteSettings.SiteId.ToInvariantString()}/htmltemplateimages/";
+                        //collection.ImagesPath = $"{siteRoot}/Data/Sites/{siteSettings.SiteId.ToInvariantString()}/htmltemplateimages/";
 
-						//add site content templates to list
-						foreach (var t in ContentTemplate.GetAll(siteSettings.SiteGuid))
-						{
-							if (!WebUser.IsInRoles(t.AllowedRoles)) { continue; }
+                        //add site content templates to list
+                        foreach (var t in ContentTemplate.GetAll(siteSettings.SiteGuid))
+                        {
+                            if (!WebUser.IsInRoles(t.AllowedRoles)) { continue; }
 
-							collection.Templates.Add(new EditorTemplate
-							{
-								Title = t.Title,
-								Image = t.ImageFileName,
-								Description = t.Description,
-								Html = t.Body.RemoveLineBreaks()
-							});
-						}
+                            collection.Templates.Add(new EditorTemplate
+                            {
+                                Title = t.Title,
+                                Image = t.ImageFileName,
+                                Description = t.Description,
+                                Html = t.Body.RemoveLineBreaks()
+                            });
+                        }
 
-						break;
-					case "system":
-						if (!systemTemplatesFile.Exists) break;
+                        break;
+                    case "system":
+                        if (!systemTemplatesFile.Exists) break;
 
-						collection.Templates.AddRange(new EditorTemplateCollection(systemTemplatesFile).Templates);
+                        collection.Templates.AddRange(new EditorTemplateCollection(systemTemplatesFile).Templates);
                         
-						break;
-					case "skin":
-						if (!skinTemplatesFile.Exists) break;
+                        break;
+                    case "skin":
+                        if (!skinTemplatesFile.Exists) break;
 
-						collection.Templates.AddRange(new EditorTemplateCollection(skinTemplatesFile).Templates);
+                        collection.Templates.AddRange(new EditorTemplateCollection(skinTemplatesFile).Templates);
 
-						break;
-					default:
-						break;
-				}
-			}
+                        break;
+                    default:
+                        break;
+                }
+            }
 
-			context.Response.Write(JsonConvert.SerializeObject(new TinyMceTemplateCollection(collection).Templates));
+            var tinyTemplates = new TinyMceTemplateCollection(collection).Templates;
+            context.Response.Write(JsonConvert.SerializeObject(
+                tinyTemplates,
+                new JsonSerializerSettings { StringEscapeHandling = StringEscapeHandling.EscapeHtml }
+            ));
             
         }
 

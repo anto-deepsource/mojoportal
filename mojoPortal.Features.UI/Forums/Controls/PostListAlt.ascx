@@ -25,11 +25,11 @@
                     <div class="postbody" id="divUntrustedPost" runat="server" visible='<%# !(Convert.ToBoolean(Eval("Trusted")) || filterContentFromTrustedUsers) %>'>
                         <NeatHtml:UntrustedContent ID="UntrustedContent1" runat="server" TrustedImageUrlPattern='<%# allowedImageUrlRegexPattern %>'
                             ClientScriptUrl="~/ClientScript/NeatHtml.js">
-                            <%# Eval("Post").ToString()%>
+                            <%# Server.HtmlEncode(Eval("Post").ToString())%>
                         </NeatHtml:UntrustedContent>
                     </div>
                     <div class="postbody" id="divTrustedPost" runat="server" visible='<%# (Convert.ToBoolean(Eval("Trusted")) && !filterContentFromTrustedUsers) %>'>
-                            <%# Eval("Post").ToString()%>
+                        <%# Server.HtmlEncode(Eval("Post").ToString())%>
                     </div>
                 </div>
                 <div class="postuser">
@@ -90,13 +90,13 @@
                     <div class="forumpostuserattribute forumsig" id="divUntrustedSignature" runat="server" visible='<%# !Convert.ToBoolean(Eval("Trusted")) %>'>
                         <NeatHtml:UntrustedContent ID="UntrustedContent2" runat="server" TrustedImageUrlPattern='<%# allowedImageUrlRegexPattern %>'
                             ClientScriptUrl="~/ClientScript/NeatHtml.js">
-                            <%# Eval("PostAuthorSignature").ToString()%>
+                            <%# Server.HtmlEncode(Eval("PostAuthorSignature").ToString())%>
                         </NeatHtml:UntrustedContent>
                     </div>
                     <div class="forumpostuserattribute forumsig" id="divTrustedSignature" runat="server" visible='<%# Convert.ToBoolean(Eval("Trusted")) %>'>
                        <NeatHtml:UntrustedContent ID="UntrustedContent3" runat="server" TrustedImageUrlPattern='<%# allowedImageUrlRegexPattern %>'
                             ClientScriptUrl="~/ClientScript/NeatHtml.js">
-                            <%# Eval("PostAuthorSignature").ToString()%>
+                            <%# Server.HtmlEncode(Eval("PostAuthorSignature").ToString())%>
                         </NeatHtml:UntrustedContent>
                     </div>
                 </div>
