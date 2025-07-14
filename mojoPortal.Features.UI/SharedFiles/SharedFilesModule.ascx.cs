@@ -67,54 +67,54 @@ namespace mojoPortal.Web.SharedFilesUI
 		}
 
 
-		private void BindData()
-		{
-			if (CurrentFolderId > -1)
-			{
-				SharedFileFolder folder = new SharedFileFolder(ModuleId, CurrentFolderId);
+        private void BindData()
+        {
+            if (CurrentFolderId > -1)
+            {
+                SharedFileFolder folder = new SharedFileFolder(ModuleId, CurrentFolderId);
 
-				btnGoUp.Visible = true;
-				rptFoldersLinks.Visible = true;
+                btnGoUp.Visible = true;
+                rptFoldersLinks.Visible = true;
 
-				if (displaySettings.ShowClickableFolderPathCrumbs)
-				{
-					lblCurrentDirectory.Visible = false;
+                if (displaySettings.ShowClickableFolderPathCrumbs)
+                {
+                    lblCurrentDirectory.Visible = false;
 
-					// by Thomas N
-					List<SharedFileFolder> allFolders = SharedFileFolder.GetSharedModuleFolderList(folder.ModuleId);
-					rptFoldersLinks.DataSource = SharedFilesHelper.GetAllParentsFolder(folder, allFolders);
+                    // by Thomas N
+                    List<SharedFileFolder> allFolders = SharedFileFolder.GetSharedModuleFolderList(folder.ModuleId);
+                    rptFoldersLinks.DataSource = SharedFilesHelper.GetAllParentsFolder(folder, allFolders);
 
-					IEnumerable<SharedFileFolder> fullPathList = SharedFilesHelper.GetAllParentsFolder(folder, allFolders).Concat(Enumerable.Repeat(folder, 1));
-					rptFoldersLinks.DataSource = fullPathList;
-					rptFoldersLinks.DataBind();
-				}
-				else
-				{
-					lblCurrentDirectory.Text = folder.FolderName;
-				}
-			}
-			else
-			{
-				lblCurrentDirectory.Visible = false;
-				btnGoUp.Visible = false;
-				rptFoldersLinks.Visible = false;
-			}
+                    IEnumerable<SharedFileFolder> fullPathList = SharedFilesHelper.GetAllParentsFolder(folder, allFolders).Concat(Enumerable.Repeat(folder, 1));
+                    rptFoldersLinks.DataSource = fullPathList;
+                    rptFoldersLinks.DataBind();
+                }
+                else
+                {
+                    lblCurrentDirectory.Text = HttpUtility.HtmlEncode(folder.FolderName);
+                }
+            }
+            else
+            {
+                lblCurrentDirectory.Visible = false;
+                btnGoUp.Visible = false;
+                rptFoldersLinks.Visible = false;
+            }
 
-			DataView dv = new DataView(SharedFileFolder.GetFoldersAndFiles(ModuleId, CurrentFolderId));
+            DataView dv = new DataView(SharedFileFolder.GetFoldersAndFiles(ModuleId, CurrentFolderId));
 
-			EnumerableRowCollection<DataRow> query =
-				from row in dv.Table.AsEnumerable()
-				where CheckRoles(row.Field<string>("ViewRoles"))
-				select row;
+            EnumerableRowCollection<DataRow> query =
+                from row in dv.Table.AsEnumerable()
+                where CheckRoles(row.Field<string>("ViewRoles"))
+                select row;
 
-			DataView view = query.AsDataView();
+            DataView view = query.AsDataView();
 
-			view.Sort = $"type ASC, filename {config.DefaultSort}";
-			dgFile.DataSource = view;
-			dgFile.DataBind();
+            view.Sort = $"type ASC, filename {config.DefaultSort}";
+            dgFile.DataSource = view;
+            dgFile.DataBind();
 
-			lblCounter.Text = $"{dgFile.Rows.Count.ToString()} {SharedFileResources.FileManagerObjectsLabel}";
-		}
+            lblCounter.Text = $"{dgFile.Rows.Count.ToString()} {SharedFileResources.FileManagerObjectsLabel}";
+        }
 
 
 		protected bool CheckRoles(string roles)
