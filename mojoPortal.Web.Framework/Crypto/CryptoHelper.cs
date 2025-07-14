@@ -176,17 +176,19 @@ namespace mojoPortal.Web.Framework
         {
             if (value == string.Empty) return string.Empty;
 
-            RijndaelManaged crypto = new RijndaelManaged();
-            MemoryStream memoryStream = new MemoryStream(Convert.FromBase64String(value));
+            using (Aes crypto = Aes.Create())
+            {
+                MemoryStream memoryStream = new MemoryStream(Convert.FromBase64String(value));
 
-            CryptoStream cryptoStream = new CryptoStream(
-                memoryStream, 
-                crypto.CreateDecryptor(key_192, iv_128),
-                CryptoStreamMode.Read);
+                CryptoStream cryptoStream = new CryptoStream(
+                    memoryStream, 
+                    crypto.CreateDecryptor(key_192, iv_128),
+                    CryptoStreamMode.Read);
 
-            StreamReader streamReader = new StreamReader(cryptoStream);
+                StreamReader streamReader = new StreamReader(cryptoStream);
 
-            return streamReader.ReadToEnd();
+                return streamReader.ReadToEnd();
+            }
         }
 
         public static string SignAndSecureData(string value)
