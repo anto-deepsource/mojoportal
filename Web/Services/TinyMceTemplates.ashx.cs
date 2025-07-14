@@ -134,7 +134,16 @@ namespace mojoPortal.Web.Services
 				}
 			}
 
-			context.Response.Write(JsonConvert.SerializeObject(new TinyMceTemplateCollection(collection).Templates));
+            var templates = new TinyMceTemplateCollection(collection).Templates;
+            foreach (var t in templates)
+            {
+                t.Title = HttpUtility.HtmlEncode(t.Title);
+                t.Image = HttpUtility.HtmlEncode(t.Image);
+                t.Description = HttpUtility.HtmlEncode(t.Description);
+                t.Html = HttpUtility.HtmlEncode(t.Html);
+            }
+
+            context.Response.Write(JsonConvert.SerializeObject(templates));
             
         }
 
