@@ -89,6 +89,8 @@ namespace mojoPortal.Features.UI.XmlXsl
             string newFileName = Path.GetFileName(file.FileName).ToCleanFileName(WebConfigSettings.ForceLowerCaseForUploadedFiles);
 
             string ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+            ext = ext.Replace("\r", "").Replace("\n", "");
+
             if (!SiteUtils.IsAllowedUploadBrowseFile(ext, ".xml|.xsl"))
             {
                 log.Info("file extension was " + ext + " so returning 404");

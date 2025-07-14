@@ -110,19 +110,25 @@ namespace mojoPortal.Web.Services
         {
             if (context.Request.Params["token"] != null)
             {
-                payPalToken = context.Request.Params["token"];
-                if (payPalToken.Length > 0)
+                var rawToken = context.Request.Params["token"];
+                if (rawToken.Length > 0)
                 {
-                    payPalToken = HttpUtility.UrlDecode(payPalToken);
+                    var decodedToken = HttpUtility.UrlDecode(rawToken);
+                    // Remove CR and LF to prevent log forging
+                    decodedToken = decodedToken.Replace("\r", "").Replace("\n", "");
+                    payPalToken = decodedToken;
                 }
             }
 
             if (context.Request.Params["PayerID"] != null)
             {
-                payPalPayerId = context.Request.Params["PayerID"];
-                if (payPalPayerId.Length > 0)
+                var rawPayerId = context.Request.Params["PayerID"];
+                if (rawPayerId.Length > 0)
                 {
-                    payPalPayerId = HttpUtility.UrlDecode(payPalPayerId);
+                    var decodedPayerId = HttpUtility.UrlDecode(rawPayerId);
+                    // Remove CR and LF to prevent log forging
+                    decodedPayerId = decodedPayerId.Replace("\r", "").Replace("\n", "");
+                    payPalPayerId = decodedPayerId;
                 }
             }
 

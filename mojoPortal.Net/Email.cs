@@ -546,6 +546,10 @@ namespace mojoPortal.Net
             List<Attachment> attachments,
 			out string result)
         {
+            // sanitize for log forging
+            subject = subject?.Replace("\r", " ").Replace("\n", " ");
+            messageBody = messageBody?.Replace("\r", " ").Replace("\n", " ");
+
             if (to == "admin@admin.com") {
 				//demo site
 				result = "can't use admin@admin.com email address";
@@ -623,8 +627,8 @@ namespace mojoPortal.Net
 
                 if (mail.To.Count == 0)
                 {
-					result = $"no valid to address was provided so not sending message {messageBody}";
-					log.Error(result);
+				result = $"no valid to address was provided so not sending message {messageBody}";
+				log.Error(result);
                     return false;
                 }
 
@@ -823,7 +827,7 @@ namespace mojoPortal.Net
                 {
                     log.Info("Sent message " + message.Subject + " to " + message.To[0].Address); 
                 }
-				result = "sent";
+			result = "sent";
                 return true;
             }
             catch (System.Net.Mail.SmtpException ex)
@@ -836,26 +840,26 @@ namespace mojoPortal.Net
             }
             catch (WebException ex)
             {
-				result = $"error: {ex}";
-                log.Error("error sending email to " + message.To.ToString() + " from " + message.From.ToString() + ", message was: " + message.Body, ex);
+			result = $"error: {ex}";
+                log.Error("error sending email to " + message.To.ToString() + " from " + message.From.ToString() + ", message was: " + message.Body.Replace("\r", "").Replace("\n", " "), ex);
                 return false;
             }
             catch (SocketException ex)
             {
-				result = $"error: {ex}";
-				log.Error("error sending email to " + message.To.ToString() + " from " + message.From.ToString() + ", message was: " + message.Body, ex);
+			result = $"error: {ex}";
+			log.Error("error sending email to " + message.To.ToString() + " from " + message.From.ToString() + ", message was: " + message.Body.Replace("\r", "").Replace("\n", " "), ex);
                 return false;
             }
             catch (InvalidOperationException ex)
             {
-				result = $"error: {ex}";
-				log.Error("error sending email to " + message.To.ToString() + " from " + message.From.ToString() + ", message was: " + message.Body, ex);
+			result = $"error: {ex}";
+			log.Error("error sending email to " + message.To.ToString() + " from " + message.From.ToString() + ", message was: " + message.Body.Replace("\r", "").Replace("\n", " "), ex);
                 return false;
             }
             catch (FormatException ex)
             {
-				result = $"error: {ex}";
-				log.Error("error sending email to " + message.To.ToString() + " from " + message.From.ToString() + ", message was: " + message.Body, ex);
+			result = $"error: {ex}";
+			log.Error("error sending email to " + message.To.ToString() + " from " + message.From.ToString() + ", message was: " + message.Body.Replace("\r", "").Replace("\n", " "), ex);
                 return false;
             }
 
