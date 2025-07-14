@@ -134,6 +134,15 @@ namespace mojoPortal.Web.Framework
             string helpFile;
             helpFile = GetFullResourceFilePath(CultureInfo.CurrentUICulture, helpFolder, helpKey + fileExtension);
 
+            // Validate the resolved file path is within the help folder to prevent path traversal
+            string fullPath = Path.GetFullPath(helpFile);
+            string basePath = Path.GetFullPath(helpFolder);
+            if (!fullPath.StartsWith(basePath, StringComparison.OrdinalIgnoreCase))
+            {
+                return String.Empty;
+            }
+            helpFile = fullPath;
+
             string message = String.Empty;
             if (File.Exists(helpFile))
             {
@@ -167,24 +176,32 @@ namespace mojoPortal.Web.Framework
                     + "/Data/HelpFiles") + Path.DirectorySeparatorChar;
         }
 
-        public static string GetFullResourceFilePath(CultureInfo cultureInfo, string folder, string filename)
-        {
-            string path = GetResourceFilePath(cultureInfo, folder, filename);
-            return
-                string.IsNullOrEmpty(path) ?
-                string.Format("{0}{1}-{2}", folder, "en-US" /* or using GetDefaultCulture().Name here? */, filename) :
-                path;
-        }
+public static string GetResourceFilePath(CultureInfo curltureInfo, string folder, string filename)
+{
+	if (curltureInfo == null || curltureInfo.LCID.Equals(CultureInfo.InvariantCulture.LCID))
+		return string.Empty;
 
-        public static string GetResourceFilePath(CultureInfo curltureInfo, string folder, string filename)
-        {
-            if (curltureInfo == null || curltureInfo.LCID.Equals(CultureInfo.InvariantCulture.LCID))
-                return string.Empty;
+	string path = string.Format("{0}{1}-{2}", folder, curltureInfo.Name, filename);
+	string fullPath = Path.GetFullPath(path);
+	string baseFolderFullPath = Path.GetFullPath(folder);
+	if (!fullPath.StartsWith(baseFolderFullPath, StringComparison.OrdinalIgnoreCase))
+	{
+		return string.Empty;
+	}
+	if (File.Exists(fullPath))
+	{
+		return fullPath;
+	}
 
-            string path = string.Format("{0}{1}-{2}", folder, curltureInfo.Name, filename);
-
-            if (File.Exists(path))
-            {
+	// default to file most likely to exist
+	path = string.Format("{0}{1}-{2}", folder, "en-US", filename);
+	fullPath = Path.GetFullPath(path);
+	if (!fullPath.StartsWith(baseFolderFullPath, StringComparison.OrdinalIgnoreCase))
+	{
+		return string.Empty;
+	}
+	return fullPath;
+}
                 return path;
             }
 

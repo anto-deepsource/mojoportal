@@ -147,19 +147,6 @@ namespace mojoPortal.FileSystem
 			return builder.ToString();
 		}
 
-		/// <summary>
-		/// Copies the contents of input to output. Doesn't close either stream.
-		/// </summary>
-		private static void CopyStream(Stream input, Stream output)
-		{
-			byte[] buffer = new byte[8 * 1024];
-			int len;
-			while ((len = input.Read(buffer, 0, buffer.Length)) > 0)
-			{
-				output.Write(buffer, 0, len);
-			}
-		}
-		
 		#region IFileSystem Members
 
 		public string FileBaseUrl
@@ -200,6 +187,22 @@ namespace mojoPortal.FileSystem
 		public OpResult SaveFile(string virtualPath, Stream stream, string contentType, bool overWrite)
 		{
 			string fullPath = MapPath(virtualPath);
+public bool FileExists(string virtualPath)
+{
+    string physicalPath = MapPath(virtualPath);
+    string fullPath = Path.GetFullPath(physicalPath);
+    string basePath = HostingEnvironment.MapPath("~");
+    if (!fullPath.StartsWith(basePath, StringComparison.OrdinalIgnoreCase))
+    {
+        return false;
+    }
+    return File.Exists(fullPath);
+}
+			{
+				return OpResult.InvalidPath;
+			}
+			fullPath = absFullPath;
+
 			if (File.Exists(fullPath))
 			{
 				if (overWrite)
@@ -222,9 +225,25 @@ namespace mojoPortal.FileSystem
 		public OpResult SaveFile(string virtualPath, HttpPostedFile file, bool overWrite)
 		{
 			string fullPath = MapPath(virtualPath);
+			// Validate directory path to prevent path traversal
+			string rootPath = HostingEnvironment.MapPath(this.VirtualRoot);
+			string absFullPath = Path.GetFullPath(fullPath);
+			if (!absFullPath.StartsWith(rootPath, StringComparison.OrdinalIgnoreCase))
+			{
+				return OpResult.InvalidPath;
+			}
+			fullPath = absFullPath;
+
 			if (file == null) { throw new ArgumentNullException("file"); }
 
 			string filePath = Path.Combine(fullPath, Path.GetFileName(file.FileName).ToCleanFileName(WebConfigSettings.ForceLowerCaseForUploadedFiles));
+			// Validate file path to prevent path traversal
+			string absFilePath = Path.GetFullPath(filePath);
+			if (!absFilePath.StartsWith(rootPath, StringComparison.OrdinalIgnoreCase))
+			{
+				return OpResult.InvalidPath;
+			}
+			filePath = absFilePath;
 
 			if (!Directory.Exists(Path.GetDirectoryName(fullPath)))
 				return OpResult.FolderNotFound;
@@ -246,8 +265,6 @@ namespace mojoPortal.FileSystem
 			string fullPath = MapPath(virtualPath);
 			return File.OpenWrite(fullPath);
 		}
-
-		
 		public Stream GetAsStream(string virtualPath)
 		{
 			return File.OpenRead(MapPath(virtualPath));
@@ -318,33 +335,43 @@ namespace mojoPortal.FileSystem
 		}
 
 
-		public OpResult DeleteFile(string virtualPath)
-		{
-			string fullPath = MapPath(virtualPath);
-			if (!File.Exists(fullPath))
-				return OpResult.NotFound;
+        public IEnumerable<WebFile> GetFileList(string virtualPath)
+        {
+            string fullPath = MapPath(virtualPath);
 
-			File.Delete(fullPath);
-			return OpResult.Succeed;
-		}
+            // Validate path traversal
+            string fullPathResolved = Path.GetFullPath(fullPath);
+            string appRoot = Path.GetFullPath(HostingEnvironment.MapPath("~"));
+            if (!fullPathResolved.StartsWith(appRoot + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(fullPathResolved, appRoot, StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+            fullPath = fullPathResolved;
+            
+            if (!Directory.Exists(fullPath)) { return null; }
+            int fullPathLen = fullPath.Length + 1;
 
-		public IEnumerable<WebFile> GetFileList(string virtualPath)
-		{
-			string fullPath = MapPath(virtualPath);
-			
-			if (!Directory.Exists(fullPath)) { return null; }
-			int fullPathLen = fullPath.Length + 1;
+            var filePaths = Directory.GetFiles(fullPath);
+            var files = new List<WebFile>(filePaths.Length);
+            foreach (var filePath in filePaths)
+            {
+                FileInfo file = new FileInfo(filePath);
+                files.Add(new WebFile()
+                {
+                    VirtualPath = Path.Combine(virtualPath, file.Name),
+                    Path = file.FullName,
+                    FolderVirtualPath = virtualPath.Substring(0, virtualPath.LastIndexOf('/')),
+                    Name = file.Name,
+                    Size = file.Length,
+                    ContentType = GuessMime(file.Name),
+                    Created = file.CreationTimeUtc,
+                    Modified = file.LastWriteTimeUtc
+                });
 
-			var filePaths = Directory.GetFiles(fullPath);
-			var files = new List<WebFile>(filePaths.Length);
-			foreach (var filePath in filePaths)
-			{
-				FileInfo file = new FileInfo(filePath);
-				files.Add(new WebFile()
-				{
-					VirtualPath = Path.Combine(virtualPath, file.Name),
-					Path = file.FullName,
-					FolderVirtualPath = virtualPath.Substring(0, virtualPath.LastIndexOf('/')),
+            }
+            return files;
+        }
 					Name = file.Name,
 					Size = file.Length,
 					ContentType = GuessMime(file.Name),

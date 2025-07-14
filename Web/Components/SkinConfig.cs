@@ -96,7 +96,17 @@ namespace mojoPortal.Web.Components
 			SkinConfig skinConfig = new();
 			string skinUrlPath = SiteUtils.DetermineSkinBaseUrl(skinName);
 
-			string configFilePath = HttpContext.Current.Server.MapPath(skinUrlPath + "/config/config.json");
+			// Validate skinUrlPath to prevent path traversal
+			string mappedSkinPath = HttpContext.Current.Server.MapPath(skinUrlPath);
+			string absoluteSkinPath = Path.GetFullPath(mappedSkinPath).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+			string allowedSkinRoot = HttpContext.Current.Server.MapPath("~/Skins/");
+			string absoluteAllowedRoot = Path.GetFullPath(allowedSkinRoot).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
+			if (!absoluteSkinPath.StartsWith(absoluteAllowedRoot, StringComparison.OrdinalIgnoreCase))
+			{
+				throw new UnauthorizedAccessException("Invalid skin path");
+			}
+
+			string configFilePath = Path.Combine(absoluteSkinPath, "config", "config.json");
 
 			FileInfo configFile = new(configFilePath);
 

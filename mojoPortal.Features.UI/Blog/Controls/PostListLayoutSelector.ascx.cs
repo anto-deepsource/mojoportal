@@ -115,7 +115,22 @@ namespace mojoPortal.Web.BlogUI
         }
         private List<FileInfo> GetLayouts(string path)
         {
-            DirectoryInfo dir = new DirectoryInfo(HttpContext.Current.Server.MapPath(path));
+            string appRoot = HttpContext.Current.Server.MapPath("~/");
+            string mappedPath;
+            try
+            {
+                mappedPath = HttpContext.Current.Server.MapPath(path);
+            }
+            catch (ArgumentException)
+            {
+                throw new ArgumentException("Invalid path.", nameof(path));
+            }
+            string fullPath = Path.GetFullPath(mappedPath);
+            if (!fullPath.StartsWith(appRoot, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new UnauthorizedAccessException("Access to the path is denied.");
+            }
+            DirectoryInfo dir = new DirectoryInfo(fullPath);
             List<FileInfo> files = new List<FileInfo>();
             if (dir.Exists)
             {

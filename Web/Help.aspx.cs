@@ -4,6 +4,7 @@ using Resources;
 using System;
 using System.Web;
 using System.Web.UI;
+using System.IO;
 
 namespace mojoPortal.Web.UI.Pages
 {
@@ -24,6 +25,7 @@ namespace mojoPortal.Web.UI.Pages
 			if (Request.Params.Get("helpkey") != null)
 			{
 				helpKey = Request.Params.Get("helpkey");
+				helpKey = Path.GetFileName(helpKey);
 			}
 
 			if (Request.Params.Get("e") == null)

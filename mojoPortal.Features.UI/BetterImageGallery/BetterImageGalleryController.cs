@@ -24,7 +24,18 @@ namespace mojoPortal.Features.UI.BetterImageGallery
 		[Route("api/BetterImageGallery/imagehandler")]
 		public IHttpActionResult ImageHandler([FromUri] string path)
 		{
-			var imgPath = HttpContext.Current.Server.MapPath("~/Data/systemfiles/BetterImageGalleryCache/" + path);
+			var basePath = HttpContext.Current.Server.MapPath("~/Data/systemfiles/BetterImageGalleryCache/");
+			if (string.IsNullOrWhiteSpace(path))
+			{
+				return BadRequest("Invalid file path.");
+			}
+			var sanitizedPath = path.TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+			var imgPath = Path.GetFullPath(Path.Combine(basePath, sanitizedPath));
+			if (!imgPath.StartsWith(basePath, System.StringComparison.OrdinalIgnoreCase))
+			{
+				return BadRequest("Invalid file path.");
+			}
+
 			var fileInfo = new FileInfo(imgPath);
 
 			return !fileInfo.Exists

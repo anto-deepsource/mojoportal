@@ -100,7 +100,14 @@ namespace mojoPortal.Web.UI
 
         private List<FileInfo> GetLayouts(string path)
         {
-            DirectoryInfo dir = new(HttpContext.Current.Server.MapPath(path));
+            string mappedPath = HttpContext.Current.Server.MapPath(path);
+            string fullPath = Path.GetFullPath(mappedPath);
+            string rootPath = HttpContext.Current.Server.MapPath("~/");
+            if (!fullPath.StartsWith(rootPath, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new UnauthorizedAccessException("Invalid path.");
+            }
+            DirectoryInfo dir = new(fullPath);
             List<FileInfo> files = new();
             if (dir.Exists)
             {

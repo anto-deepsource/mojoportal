@@ -90,19 +90,29 @@ namespace mojoPortal.Features.UI.BetterImageGallery
 		}
 
 
-		private List<FileInfo> GetLayouts(string path)
-		{
-			DirectoryInfo dir = new DirectoryInfo(HttpContext.Current.Server.MapPath(path));
-			List<FileInfo> files = new List<FileInfo>();
+        private List<FileInfo> GetLayouts(string path)
+        {
+            // Resolve and validate the provided path to prevent path traversal
+            string appRoot = HttpContext.Current.Server.MapPath("~/");
+            string resolvedPath = HttpContext.Current.Server.MapPath(path);
+            string fullPath = Path.GetFullPath(resolvedPath);
+            if (!fullPath.StartsWith(appRoot, StringComparison.OrdinalIgnoreCase))
+            {
+                // Invalid or unauthorized path, return empty list
+                return new List<FileInfo>();
+            }
 
-			if (dir.Exists)
-			{
-				files.AddRange(dir.GetFiles(themeName + ".cshtml"));
-				files.AddRange(dir.GetFiles(themeName + "--*.cshtml"));
-			}
+            DirectoryInfo dir = new DirectoryInfo(fullPath);
+            List<FileInfo> files = new List<FileInfo>();
 
-			return files;
-		}
+            if (dir.Exists)
+            {
+                files.AddRange(dir.GetFiles(themeName + ".cshtml"));
+                files.AddRange(dir.GetFiles(themeName + "--*.cshtml"));
+            }
+
+            return files;
+        }
 
 
 		public string GetValue()
