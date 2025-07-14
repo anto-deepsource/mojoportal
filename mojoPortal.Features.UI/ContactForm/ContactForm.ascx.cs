@@ -101,33 +101,10 @@ namespace mojoPortal.Web.ContactUI
 				}
 
 				StringBuilder message = new StringBuilder();
-				message.Append(txtName.Text + "<br />");
-				message.Append(txtEmail.Text + "<br /><br />");
-				message.Append(SiteUtils.ChangeRelativeUrlsToFullyQualifiedUrls(SiteUtils.GetNavigationSiteRoot(), WebUtils.GetSiteRoot(), edMessage.Text));
+				message.Append(txtName.Text.Replace("\r", " ").Replace("\n", " ") + "<br />");
+				message.Append(txtEmail.Text.Replace("\r", " ").Replace("\n", " ") + "<br /><br />");
+				message.Append(SiteUtils.ChangeRelativeUrlsToFullyQualifiedUrls(SiteUtils.GetNavigationSiteRoot(), WebUtils.GetSiteRoot(), edMessage.Text.Replace("\r", " ").Replace("\n", " ")));
 				message.Append("<br /><br />");
-
-				if (config.AppendIPToMessageSetting)
-				{
-					message.Append("HTTP_USER_AGENT: " + Page.Request.ServerVariables["HTTP_USER_AGENT"] + "<br />");
-					message.Append("REMOTE_HOST: " + Page.Request.ServerVariables[WebConfigSettings.RemoteHostServerVariable] + "<br />");
-					message.Append("REMOTE_ADDR: " + SiteUtils.GetIP4Address() + "<br />");
-					message.Append("LOCAL_ADDR: " + Page.Request.ServerVariables["LOCAL_ADDR"] + "<br />");
-				}
-
-				Module m = new Module(ModuleId);
-				if (config.KeepMessages && (m.ModuleGuid != Guid.Empty))
-				{
-					ContactFormMessage contact = new ContactFormMessage();
-					contact.ModuleGuid = m.ModuleGuid;
-					contact.SiteGuid = siteSettings.SiteGuid;
-					contact.Message = message.ToString();
-					contact.Subject = config.SubjectPrefix + ": " + txtSubject.Text;
-					contact.UserName = txtName.Text;
-					contact.Email = txtEmail.Text;
-					contact.CreatedFromIpAddress = SiteUtils.GetIP4Address();
-
-					if (Request.IsAuthenticated)
-					{
 						SiteUser currentUser = SiteUtils.GetCurrentSiteUser();
 						if (currentUser != null)
 							contact.UserGuid = currentUser.UserGuid;

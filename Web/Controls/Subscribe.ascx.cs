@@ -210,6 +210,22 @@ namespace mojoPortal.Web.ELetterUI
 
         private void DoSubscribe(LetterInfo letter, string email)
         {
+            if (string.IsNullOrEmpty(email))
+            {
+                return;
+            }
+            var sanitizedEmail = email.Replace("\r", "").Replace("\n", "");
+            try
+            {
+                var mailAddr = new System.Net.Mail.MailAddress(sanitizedEmail);
+                sanitizedEmail = mailAddr.Address;
+            }
+            catch (FormatException)
+            {
+                return;
+            }
+            email = sanitizedEmail;
+
             if (email == "email@gmail.com") { return; } //I've been seeing a lot of this from a bot
 
             LetterSubscriber s = subscriptions.Fetch(siteSettings.SiteGuid, letter.LetterInfoGuid, email);
@@ -238,9 +254,6 @@ namespace mojoPortal.Web.ELetterUI
                 }
                 else
                 {
-                    // user is not authenticated but may still exist
-                    // attach userguid but don't flag as verified
-                    // because we don't know that the user who submited the form is the account owner
                     SiteUser siteUser = SiteUser.GetByEmail(siteSettings, email);
                     if (siteUser != null) { s.UserGuid = siteUser.UserGuid; }
 
@@ -265,11 +278,8 @@ namespace mojoPortal.Web.ELetterUI
             }
             else
             {
-                // we found an existing subscription
-
                 if (!s.IsVerified)
                 {
-                    // if the current authenticated user has the same email mark it as verified
                     if ((currentUser != null) && (string.Equals(currentUser.Email, email, StringComparison.InvariantCultureIgnoreCase)))
                     {
                         s.UserGuid = currentUser.UserGuid;
@@ -282,15 +292,11 @@ namespace mojoPortal.Web.ELetterUI
                     }
                     else if (s.BeginUtc < DateTime.UtcNow.AddDays(-WebConfigSettings.NewsletterReVerifcationAfterDays))
                     {
-                        // if the user never verifed before and its been at least x days go ahead and send another chance to verify
                         needToSendVerification = true;
-                        // TODO: maybe we should log this in case some spam script is using the same email over and over
-                        // or maybe we should add a verification sent count on subscription
                     }
                 }
             }
 
-            //added 2012-05-16 to support intranet scenarios where verification is not required
             if (!WebConfigSettings.NewsletterRequireVerification)
             {
                 if (!s.IsVerified)

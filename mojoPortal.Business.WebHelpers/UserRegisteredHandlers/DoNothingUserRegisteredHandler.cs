@@ -31,8 +31,10 @@ namespace mojoPortal.Business.WebHelpers.UserRegisteredHandlers
             if (e == null) return;
             if (e.SiteUser == null) return;
             
-            // do nothing
-            log.Debug("DoNothingUserRegisteredHandler called for new user " + e.SiteUser.Email);
+            string sanitizedEmail = e.SiteUser.Email ?? string.Empty;
+            sanitizedEmail = sanitizedEmail.Replace("\r", "").Replace("\n", "");
+            
+            log.Debug("DoNothingUserRegisteredHandler called for new user " + sanitizedEmail);
         }
     }
 }

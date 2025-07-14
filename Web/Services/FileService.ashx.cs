@@ -260,7 +260,9 @@ namespace mojoPortal.Web.Services
 
             if (context.Request.Params["frmData"] != null)
             {
-                virtualPath = context.Request.Params["frmData"].Replace("..", string.Empty);
+                string input = context.Request.Params["frmData"];
+                string sanitized = input.Replace("..", string.Empty).Replace("\r", string.Empty).Replace("\n", string.Empty);
+                virtualPath = sanitized;
             }
 
             if (virtualPath.StartsWith("/")) { virtualPath = "~" + virtualPath; }

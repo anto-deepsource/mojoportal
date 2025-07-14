@@ -68,8 +68,17 @@ namespace mojoPortal.Web.AdminUI
                     di.Create();
                 }
 
-                string destPath = Path.Combine(destFolder, 
-                    Path.GetFileName(uploader.FileName).ToCleanFileName(WebConfigSettings.ForceLowerCaseForUploadedFiles));
+                string cleanFileName = Path.GetFileName(uploader.FileName)
+                    .ToCleanFileName(WebConfigSettings.ForceLowerCaseForUploadedFiles);
+                // sanitize input to prevent log forging
+                string safeFileName = cleanFileName.Replace("\r", "").Replace("\n", "");
+                // validate file extension
+                if (!safeFileName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new InvalidOperationException("Invalid file type.");
+                }
+
+                string destPath = Path.Combine(destFolder, safeFileName);
 
                 if (File.Exists(destPath))
                 {

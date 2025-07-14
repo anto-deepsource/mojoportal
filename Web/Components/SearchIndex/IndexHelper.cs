@@ -815,57 +815,42 @@ namespace mojoPortal.SearchIndex
                         int itemsToAdd = end;
 
                         QueryScorer scorer = new QueryScorer(searchQuery);
-                        SimpleHTMLFormatter formatter = new SimpleHTMLFormatter("<span class='searchterm'>", "</span>");
-                        Highlighter highlighter = new Highlighter(formatter, scorer);
+        public static IndexItemCollection Search(
+            int siteId,
+            bool isAdminContentAdminOrSiteEditor,
+            List<string> userRoles,
+            Guid featureGuid,
+            DateTime modifiedBeginDate,
+            DateTime modifiedEndDate,
+            string queryText,
+            bool highlightResults,
+            int highlightedFragmentSize,
+            int pageNumber,
+            int pageSize,
+            int maxClauseCount,
+            out int totalHits,
+            out bool invalidQuery)
+        {
+            invalidQuery = false;
+            totalHits = 0;
 
-                        highlighter.TextFragmenter = new SimpleFragmenter(highlightedFragmentSize);
+            // Sanitize queryText to remove any CR or LF to prevent log forging
+            if (!string.IsNullOrEmpty(queryText))
+            {
+                queryText = queryText.Replace("\r", " ").Replace("\n", " ").Trim();
+            }
 
-                        for (int i = startHit; i < itemsToAdd; i++)
-                        {
-                            Document doc = searcher.Doc(hits.ScoreDocs[i].Doc);
-                            IndexItem indexItem = new IndexItem(doc, hits.ScoreDocs[i].Score);
+            IndexItemCollection results = new IndexItemCollection();
 
-                            if (highlightResults)
-                            {
-                                try
-                                {
-                                    TokenStream stream = analyzer.TokenStream("contents", new StringReader(doc.Get("contents")));
-                                    string highlightedResult = highlighter.GetBestFragment(stream, doc.Get("contents"));
+            if (string.IsNullOrEmpty(queryText))
+            {
+                return results;
+            }
 
-                                    if (highlightedResult != null) { indexItem.Intro = highlightedResult; }
-                                }
-                                catch (NullReferenceException) { }
-                            }
+            bool DisableSearchFeatureFilters = WebConfigSettings.DisableSearchFeatureFilters;
 
-                            results.Add(indexItem);
-                            itemsAdded += 1;
-
-                        }
-
-                        results.ItemCount = itemsAdded;
-                        results.PageIndex = pageNumber;
-
-                        results.ExecutionTime = DateTime.Now.Ticks - startTicks;
-
-                    }
-
-                }
-                catch (ParseException ex)
-                {
-                    invalidQuery = true;
-                    log.Error("handled error for search terms " + queryText, ex);
-                    // these parser exceptions are generally caused by
-                    // spambots posting too much junk into the search form
-                    // heres an option to automatically ban the ip address
-                    HandleSpam(queryText, ex);
-
-
-                    return results;
-                }
-                catch (BooleanQuery.TooManyClauses ex)
-                {
-                    invalidQuery = true;
-                    log.Error("handled error for search terms " + queryText, ex);
+            using (Lucene.Net.Store.Directory searchDirectory = GetDirectory(siteId))
+            {
                     return results;
 
                 }

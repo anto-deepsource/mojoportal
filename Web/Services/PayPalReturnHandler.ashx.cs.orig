@@ -1,6 +1,6 @@
 ﻿/// Author:					
-/// Created:                2007-03-09
-/// Last Modified:           2013-12-19
+/// Created:				2007-03-09
+/// Last Modified:			2013-12-19
 /// 
 /// The use and distribution terms for this software are covered by the 
 /// Common Public License 1.0 (http://opensource.org/licenses/cpl.php)
@@ -19,7 +19,6 @@ using System.Web.Services.Protocols;
 using log4net;
 using mojoPortal.Business;
 using mojoPortal.Business.WebHelpers.PaymentGateway;
-using System.Text.RegularExpressions;
 
 namespace mojoPortal.Web.Services
 {
@@ -111,35 +110,20 @@ namespace mojoPortal.Web.Services
         {
             if (context.Request.Params["token"] != null)
             {
-                string tokenParam = context.Request.Params["token"];
-                if (tokenParam.Length > 0)
+                payPalToken = context.Request.Params["token"];
+                if (payPalToken.Length > 0)
                 {
-                    tokenParam = HttpUtility.UrlDecode(tokenParam);
-                }
-                // sanitize input by removing CR and LF characters
-                tokenParam = tokenParam.Replace("\r", string.Empty).Replace("\n", string.Empty);
-                // validate token to contain only alphanumeric, hyphen, and underscore
-                if (Regex.IsMatch(tokenParam, @"^[a-zA-Z0-9_-]+$"))
-                {
-                    payPalToken = tokenParam;
-                }
-                else
-                {
-                    payPalToken = string.Empty;
-                    log.Info("invalid token format provided");
+                    payPalToken = HttpUtility.UrlDecode(payPalToken);
                 }
             }
 
             if (context.Request.Params["PayerID"] != null)
             {
-                string payerIdParam = context.Request.Params["PayerID"];
-                if (payerIdParam.Length > 0)
+                payPalPayerId = context.Request.Params["PayerID"];
+                if (payPalPayerId.Length > 0)
                 {
-                    payerIdParam = HttpUtility.UrlDecode(payerIdParam);
+                    payPalPayerId = HttpUtility.UrlDecode(payPalPayerId);
                 }
-                // sanitize input by removing CR and LF characters
-                payerIdParam = payerIdParam.Replace("\r", string.Empty).Replace("\n", string.Empty);
-                payPalPayerId = payerIdParam;
             }
 
             //commerceConfig = StoreHelper.GetCommerceConfig();

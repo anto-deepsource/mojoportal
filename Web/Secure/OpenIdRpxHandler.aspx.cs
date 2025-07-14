@@ -25,6 +25,7 @@ using mojoPortal.Business.WebHelpers.UserSignInHandlers;
 using mojoPortal.Net;
 using mojoPortal.Web.Configuration;
 using mojoPortal.Web.Framework;
+using System.Net.Mail;
 
 namespace mojoPortal.Web.UI
 {
@@ -584,64 +585,80 @@ namespace mojoPortal.Web.UI
 			}
 		}
 
-		void btnCreateUser_Click(object sender, EventArgs e)
-		{
-			Page.Validate("profile");
-			if (!Page.IsValid) { return; }
+        void btnCreateUser_Click(object sender, EventArgs e)
+        {
+            Page.Validate("profile");
+            if (!Page.IsValid) { return; }
 
-			if (hdnIdentifier.Value.Length == 0)
-			{   // form manipulation if this is missing
-				Response.Redirect(SiteRoot + "/Secure/Register.aspx");
-				return;
-			}
+            if (hdnIdentifier.Value.Length == 0)
+            {   // form manipulation if this is missing
+                Response.Redirect(SiteRoot + "/Secure/Register.aspx");
+                return;
+            }
 
-			string email = txtEmail.Text;
+            string email = txtEmail.Text;
+            // sanitize email to prevent log forging
+            email = email.Replace("\r", "").Replace("\n", "").Trim();
+            // validate email format
+            try
+            {
+                var mailAddr = new MailAddress(email);
+                email = mailAddr.Address;
+            }
+            catch (FormatException)
+            {
+                lblError.Text = "Invalid email format.";
+                return;
+            }
 
-			if (email.Length == 0)
-			{
-				if ((hdnEmail.Value.Length > 0) && (!SiteUser.EmailExistsInDB(siteSettings.SiteId, hdnEmail.Value)))
-				{
-					email = hdnEmail.Value;
-				}
+            if (email.Length == 0)
+            {
+                if ((hdnEmail.Value.Length > 0) && (!SiteUser.EmailExistsInDB(siteSettings.SiteId, hdnEmail.Value)))
+                {
+                    email = hdnEmail.Value;
+                }
 
-			}
+            }
 
-			string loginName = string.Empty;
+            string loginName = string.Empty;
 
-			if ((hdnPreferredUsername.Value.Length > 0) && (!SiteUser.LoginExistsInDB(siteSettings.SiteId, hdnPreferredUsername.Value)))
-			{
-				loginName = hdnPreferredUsername.Value;
-			}
+            if ((hdnPreferredUsername.Value.Length > 0) && (!SiteUser.LoginExistsInDB(siteSettings.SiteId, hdnPreferredUsername.Value)))
+            {
+                loginName = hdnPreferredUsername.Value;
+            }
 
-			if (loginName.Length == 0) { loginName = SiteUtils.SuggestLoginNameFromEmail(siteSettings.SiteId, email); }
+            if (loginName.Length == 0) { loginName = SiteUtils.SuggestLoginNameFromEmail(siteSettings.SiteId, email); }
+            // sanitize loginName to prevent log forging
+            loginName = loginName.Replace("\r", "").Replace("\n", "").Trim();
 
-			string name = loginName;
+            string name = loginName;
 
-			if (hdnDisplayName.Value.Length > 0)
-			{
-				name = hdnDisplayName.Value;
-			}
+            if (hdnDisplayName.Value.Length > 0)
+            {
+                name = hdnDisplayName.Value;
+            }
+            // sanitize name to prevent log forging
+            name = name.Replace("\r", "").Replace("\n", "").Trim();
+
+            if (SiteUser.EmailExistsInDB(siteSettings.SiteId, email))
+            {
+                lblError.Text = Resource.RegisterDuplicateEmailMessage;
+            }
+            else
+            {
+                bool emailIsVerified = false;
+                SiteUser newUser = CreateUser(
+                    hdnIdentifier.Value,
+                    email,
+                    loginName,
+                    name,
+                    emailIsVerified);
+
+                SignInUser(newUser, true);
+            }
 
 
-			if (SiteUser.EmailExistsInDB(siteSettings.SiteId, email))
-			{
-				lblError.Text = Resource.RegisterDuplicateEmailMessage;
-			}
-			else
-			{
-				bool emailIsVerified = false;
-				SiteUser newUser = CreateUser(
-					hdnIdentifier.Value,
-					email,
-					loginName,
-					name,
-					emailIsVerified);
-
-				SignInUser(newUser, true);
-			}
-
-
-		}
+        }
 
 		private SiteUser CreateUser(
 			string openId,

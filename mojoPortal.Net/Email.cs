@@ -566,7 +566,7 @@ namespace mojoPortal.Net
                 return false;
             }
 
-            if (debugLog) log.Debug($"In Email.Send({from}, {to}, {cc}, {bcc}, {subject}, {messageBody}, {html}, {priority})");
+            if (debugLog) log.Debug($"In Email.Send({from}, {to}, {cc}, {bcc}, {subject.Replace(\"\r\", \"\\r\").Replace(\"\n\", \"\\n\")}, {messageBody.Replace(\"\r\", \"\\r\").Replace(\"\n\", \"\\n\")}, {html}, {priority})");
 
             using (MailMessage mail = new MailMessage())
             {
@@ -587,16 +587,16 @@ namespace mojoPortal.Net
                 }
                 catch (ArgumentException)
                 {
-					result = $"invalid from address {from}";
+				result = $"invalid from address {from}";
                     log.Error(result);
-                    log.Info("no valid from address was provided so not sending message " + messageBody);
+                    log.Info("no valid from address was provided so not sending message " + messageBody.Replace("\r", "\\r").Replace("\n", "\\n"));
                     return false;
                 }
                 catch (FormatException)
                 {
-					result = $"invalid from address {from}";
-					log.Error(result);
-					log.Info("no valid from address was provided so not sending message " + messageBody);
+				result = $"invalid from address {from}";
+				log.Error(result);
+				log.Info("no valid from address was provided so not sending message " + messageBody.Replace("\r", "\\r").Replace("\n", "\\n"));
                     return false;
                 }
 
@@ -623,8 +623,8 @@ namespace mojoPortal.Net
 
                 if (mail.To.Count == 0)
                 {
-					result = $"no valid to address was provided so not sending message {messageBody}";
-					log.Error(result);
+				result = $"no valid to address was provided so not sending message {messageBody.Replace("\r", "\\r").Replace("\n", "\\n")}";
+				log.Error(result);
                     return false;
                 }
 
