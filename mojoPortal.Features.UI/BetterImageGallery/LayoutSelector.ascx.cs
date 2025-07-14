@@ -92,7 +92,16 @@ namespace mojoPortal.Features.UI.BetterImageGallery
 
 		private List<FileInfo> GetLayouts(string path)
 		{
-			DirectoryInfo dir = new DirectoryInfo(HttpContext.Current.Server.MapPath(path));
+			// Resolve and validate the physical path to prevent directory traversal
+			string mappedPath = HttpContext.Current.Server.MapPath(path);
+			string fullPath = Path.GetFullPath(mappedPath);
+			string rootPath = HttpContext.Current.Server.MapPath("~/");
+			if (!fullPath.StartsWith(rootPath, StringComparison.OrdinalIgnoreCase))
+			{
+				throw new HttpException(403, "Forbidden");
+			}
+
+			DirectoryInfo dir = new DirectoryInfo(fullPath);
 			List<FileInfo> files = new List<FileInfo>();
 
 			if (dir.Exists)

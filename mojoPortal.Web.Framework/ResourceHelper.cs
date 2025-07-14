@@ -183,16 +183,43 @@ namespace mojoPortal.Web.Framework
 
             string path = string.Format("{0}{1}-{2}", folder, curltureInfo.Name, filename);
 
-            if (File.Exists(path))
+            // Validate and get full path to prevent path traversal
+            string baseFolderFull;
+            string fullPath;
+            try
             {
-                return path;
+                baseFolderFull = Path.GetFullPath(folder);
+                fullPath = Path.GetFullPath(path);
+            }
+            catch
+            {
+                return string.Empty;
+            }
+            if (!fullPath.StartsWith(baseFolderFull, StringComparison.OrdinalIgnoreCase))
+            {
+                return string.Empty;
+            }
+
+            if (File.Exists(fullPath))
+            {
+                return fullPath;
             }
 
             // default to file most likely to exist
             path = string.Format("{0}{1}-{2}", folder, "en-US", filename);
-            return path;
-
-            //return File.Exists(path) ? path : GetResourceFilePath(curltureInfo.Parent, folder, filename);
+            try
+            {
+                fullPath = Path.GetFullPath(path);
+            }
+            catch
+            {
+                return string.Empty;
+            }
+            if (!fullPath.StartsWith(baseFolderFull, StringComparison.OrdinalIgnoreCase))
+            {
+                return string.Empty;
+            }
+            return fullPath;
         }
 
         #endregion

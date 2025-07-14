@@ -92,13 +92,26 @@ namespace mojoPortal.Web.Components
 
 		private SkinConfig getSkinConfig(string skinName)
 		{
-			//siteSettings = CacheHelper.GetCurrentSiteSettings();
+			// Validate and sanitize skinName to prevent directory traversal
+			string safeSkinName = Path.GetFileName(skinName);
+			if (string.IsNullOrEmpty(safeSkinName) || safeSkinName != skinName || skinName.IndexOf("..", System.StringComparison.Ordinal) >= 0)
+			{
+				throw new System.ArgumentException("Invalid skin name", nameof(skinName));
+			}
+
 			SkinConfig skinConfig = new();
-			string skinUrlPath = SiteUtils.DetermineSkinBaseUrl(skinName);
+			string skinUrlPath = SiteUtils.DetermineSkinBaseUrl(safeSkinName);
 
-			string configFilePath = HttpContext.Current.Server.MapPath(skinUrlPath + "/config/config.json");
+			string skinDirPath = HttpContext.Current.Server.MapPath(skinUrlPath);
+			string configFilePath = Path.Combine(skinDirPath, "config", "config.json");
+			string fullConfigPath = Path.GetFullPath(configFilePath);
 
-			FileInfo configFile = new(configFilePath);
+			if (!fullConfigPath.StartsWith(Path.GetFullPath(skinDirPath), System.StringComparison.OrdinalIgnoreCase))
+			{
+				throw new System.UnauthorizedAccessException("Invalid skin path");
+			}
+
+			FileInfo configFile = new(fullConfigPath);
 
 			if (configFile.Exists)
 			{
