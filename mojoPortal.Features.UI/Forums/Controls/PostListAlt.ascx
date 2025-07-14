@@ -25,11 +25,11 @@
                     <div class="postbody" id="divUntrustedPost" runat="server" visible='<%# !(Convert.ToBoolean(Eval("Trusted")) || filterContentFromTrustedUsers) %>'>
                         <NeatHtml:UntrustedContent ID="UntrustedContent1" runat="server" TrustedImageUrlPattern='<%# allowedImageUrlRegexPattern %>'
                             ClientScriptUrl="~/ClientScript/NeatHtml.js">
-                            <%# Eval("Post").ToString()%>
+                            <%# Server.HtmlEncode(Eval("Post").ToString())%>
                         </NeatHtml:UntrustedContent>
                     </div>
                     <div class="postbody" id="divTrustedPost" runat="server" visible='<%# (Convert.ToBoolean(Eval("Trusted")) && !filterContentFromTrustedUsers) %>'>
-                            <%# Eval("Post").ToString()%>
+                            <%# Server.HtmlEncode(Eval("Post").ToString())%>
                     </div>
                 </div>
                 <div class="postuser">
@@ -54,17 +54,17 @@
                         <tr>
                             <td id="tdAvatars" runat="server" visible='<%# !displaySettings.HideAvatars %>'>
                                  <portal:Avatar id="av1" runat="server"
-	                                UseLink='<%# UseProfileLink() %>'
-	                                MaxAllowedRating='<%# MaxAllowedGravatarRating %>'
+                                        UseLink='<%# UseProfileLink() %>'
+                                        MaxAllowedRating='<%# MaxAllowedGravatarRating %>'
                                     AvatarFile='<%# Eval("PostAuthorAvatar") %>'
-	                                UserName='<%# Eval("PostAuthor") %>'
+                                        UserName='<%# Eval("PostAuthor") %>'
                                     UserId='<%# Convert.ToInt32(Eval("UserID")) %>'
                                     SiteId='<%# SiteSettings.SiteId %>'
                                     SiteRoot='<%# SiteRoot %>'
-	                                Email='<%# Eval("AuthorEmail") %>'
+                                        Email='<%# Eval("AuthorEmail") %>'
                                     UserNameTooltipFormat='<%# UserNameTooltipFormat %>'
-	                                Disable='<%# disableAvatars %>'
-	                                UseGravatar='<%# allowGravatars %>'
+                                        Disable='<%# disableAvatars %>'
+                                        UseGravatar='<%# allowGravatars %>'
                                     GravatarFallbackEmailAddress="noreply@noreply.com"
                                     />
                                 </div>
@@ -90,13 +90,13 @@
                     <div class="forumpostuserattribute forumsig" id="divUntrustedSignature" runat="server" visible='<%# !Convert.ToBoolean(Eval("Trusted")) %>'>
                         <NeatHtml:UntrustedContent ID="UntrustedContent2" runat="server" TrustedImageUrlPattern='<%# allowedImageUrlRegexPattern %>'
                             ClientScriptUrl="~/ClientScript/NeatHtml.js">
-                            <%# Eval("PostAuthorSignature").ToString()%>
+                            <%# Server.HtmlEncode(Eval("PostAuthorSignature").ToString())%>
                         </NeatHtml:UntrustedContent>
                     </div>
                     <div class="forumpostuserattribute forumsig" id="divTrustedSignature" runat="server" visible='<%# Convert.ToBoolean(Eval("Trusted")) %>'>
                        <NeatHtml:UntrustedContent ID="UntrustedContent3" runat="server" TrustedImageUrlPattern='<%# allowedImageUrlRegexPattern %>'
                             ClientScriptUrl="~/ClientScript/NeatHtml.js">
-                            <%# Eval("PostAuthorSignature").ToString()%>
+                            <%# Server.HtmlEncode(Eval("PostAuthorSignature").ToString())%>
                         </NeatHtml:UntrustedContent>
                     </div>
                 </div>
