@@ -1933,43 +1933,44 @@ namespace mojoPortal.Web
 		}
 
 
-		private void ChangeFromEncryptedPasswordsToClearText(object objSiteSettings)
-		{
-			if (!(objSiteSettings is SiteSettings site))
-			{
-				return;
-			}
+        private void ChangeFromEncryptedPasswordsToClearText(object objSiteSettings)
+        {
+            if (!(objSiteSettings is SiteSettings site))
+            {
+                return;
+            }
 
-			DataTable dtUsers = SiteUser.GetUserListForPasswordFormatChange(site.SiteId);
+            DataTable dtUsers = SiteUser.GetUserListForPasswordFormatChange(site.SiteId);
 
-			foreach (DataRow row in dtUsers.Rows)
-			{
-				try
-				{
-					var userId = Convert.ToInt32(row["UserID"]);
-					var oldPassword = row["Pwd"].ToString();
-					var salt = row["PasswordSalt"].ToString();
-					string clearPassword;
-
-					if (salt.Length > 0)
-					{
-						clearPassword = UnencodePassword(oldPassword, MembershipPasswordFormat.Encrypted).Replace(salt, string.Empty);
-					}
-					else
-					{
-						clearPassword = UnencodePassword(oldPassword, MembershipPasswordFormat.Encrypted);
-					}
-
-					SiteUser.UpdatePasswordAndSalt(userId, (int)MembershipPasswordFormat.Clear, clearPassword, string.Empty);
-				}
-				catch (Exception ex)
-				{
-					// I don't like catching a general exception here but since this gets queued 
-					//on a different thread best to log anything that goes wrong
-					log.Error("ChangeFromClearTextPasswordsToEncrypted", ex);
-				}
-			}
-		}
+            foreach (DataRow row in dtUsers.Rows)
+            {
+                try
+                {
+                    var userId = Convert.ToInt32(row["UserID"]);
+                    var oldPassword = row["Pwd"].ToString();
+                    var salt = row["PasswordSalt"].ToString();
+                    string passwordString;
+                    if (salt.Length > 0)
+                    {
+                        passwordString = UnencodePassword(oldPassword, MembershipPasswordFormat.Encrypted).Replace(salt, string.Empty);
+                    }
+                    else
+                    {
+                        passwordString = UnencodePassword(oldPassword, MembershipPasswordFormat.Encrypted);
+                    }
+                    char[] clearPassword = passwordString.ToCharArray();
+                    SiteUser.UpdatePasswordAndSalt(userId, (int)MembershipPasswordFormat.Clear, new string(clearPassword), string.Empty);
+                    Array.Clear(clearPassword, 0, clearPassword.Length);
+                    passwordString = null;
+                }
+                catch (Exception ex)
+                {
+                    // I don't like catching a general exception here but since this gets queued 
+                    //on a different thread best to log anything that goes wrong
+                    log.Error("ChangeFromClearTextPasswordsToEncrypted", ex);
+                }
+            }
+        }
 
 
 		private void ChangeFromEncryptedPasswordsToHashed(object objSiteSettings)

@@ -1,6 +1,6 @@
 ﻿// Author:					
-// Created:                   2012-01-09
-// Last Modified:             2012-01-09
+// Created:				    2012-01-09
+// Last Modified:			2012-01-09
 // 
 // The use and distribution terms for this software are covered by the 
 // Common Public License 1.0 (http://opensource.org/licenses/cpl.php)  
@@ -10,7 +10,6 @@
 //
 // You must not remove this notice, or any other, from this software.
 
-using System;
 using System.Configuration;
 using mojoPortal.Business;
 using mojoPortal.Business.WebHelpers;
@@ -34,7 +33,7 @@ namespace mojoPortal.Web.Commerce
         private string configPrefix = string.Empty;
         private bool paymentGatewayUseTestMode = false;
         private string payPalAPIUsername = string.Empty;
-        private char[] payPalAPIPassword = new char[0];
+        private string payPalAPIPassword = string.Empty;
         private string payPalAPISignature = string.Empty;
         private bool didLoadSettings = false;
 
@@ -46,13 +45,10 @@ namespace mojoPortal.Web.Commerce
                 LoadSettings();
             }
 
-            if ((payPalAPIUsername.Length > 0) && (payPalAPIPassword != null && payPalAPIPassword.Length > 0) && (payPalAPISignature.Length > 0))
+            if ((payPalAPIUsername.Length > 0) && (payPalAPIPassword.Length > 0) && (payPalAPISignature.Length > 0))
             {
-                string password = new string(payPalAPIPassword);
-                PayPalDirectPaymentGateway gateway = new PayPalDirectPaymentGateway(payPalAPIUsername, password, payPalAPISignature);
+                PayPalDirectPaymentGateway gateway = new PayPalDirectPaymentGateway(payPalAPIUsername, payPalAPIPassword, payPalAPISignature);
                 gateway.UseTestMode = paymentGatewayUseTestMode;
-                Array.Clear(payPalAPIPassword, 0, payPalAPIPassword.Length);
-                payPalAPIPassword = new char[0];
                 return gateway;
 
             }
@@ -69,13 +65,13 @@ namespace mojoPortal.Web.Commerce
                 if (paymentGatewayUseTestMode)
                 {
                     payPalAPIUsername = WebConfigSettings.CommerceGlobalPayPalSandboxAPIUsername;
-                    payPalAPIPassword = WebConfigSettings.CommerceGlobalPayPalSandboxAPIPassword.ToCharArray();
+                    payPalAPIPassword = WebConfigSettings.CommerceGlobalPayPalSandboxAPIPassword;
                     payPalAPISignature = WebConfigSettings.CommerceGlobalPayPalSandboxAPISignature;
                 }
                 else
                 {
                     payPalAPIUsername = WebConfigSettings.CommerceGlobalPayPalProductionAPIUsername;
-                    payPalAPIPassword = WebConfigSettings.CommerceGlobalPayPalProductionAPIPassword.ToCharArray();
+                    payPalAPIPassword = WebConfigSettings.CommerceGlobalPayPalProductionAPIPassword;
                     payPalAPISignature = WebConfigSettings.CommerceGlobalPayPalProductionAPISignature;
                 }
 
@@ -86,26 +82,8 @@ namespace mojoPortal.Web.Commerce
                 if (siteSettings == null) { return; }
 
                 configPrefix = "Site" + siteSettings.SiteId.ToInvariantString() + "-";
-                paymentGatewayUseTestMode = ConfigHelper.GetBoolProperty(configPrefix + PaymentGatewayUseTestModeConfig, false);
 
-                if (paymentGatewayUseTestMode)
-                {
-                    payPalAPIUsername = ConfigHelper.GetStringProperty(configPrefix + PayPalSandboxAPIUsernameConfig, string.Empty);
-                    payPalAPIPassword = ConfigHelper.GetStringProperty(configPrefix + PayPalSandboxAPIPasswordConfig, string.Empty).ToCharArray();
-                    payPalAPISignature = ConfigHelper.GetStringProperty(configPrefix + PayPalSandboxAPISignatureConfig, string.Empty);
-                }
-                else
-                {
-                    payPalAPIUsername = ConfigHelper.GetStringProperty(configPrefix + PayPalProductionAPIUsernameConfig, string.Empty);
-                    payPalAPIPassword = ConfigHelper.GetStringProperty(configPrefix + PayPalProductionAPIPasswordConfig, string.Empty).ToCharArray();
-                    payPalAPISignature = ConfigHelper.GetStringProperty(configPrefix + PayPalProductionAPISignatureConfig, string.Empty);
-                }
-            }
-
-            didLoadSettings = true;
-        }
-    }
-}
+                paymentGatewayUseTestMode
                     = ConfigHelper.GetBoolProperty(configPrefix + PaymentGatewayUseTestModeConfig,
                     paymentGatewayUseTestMode);
 
