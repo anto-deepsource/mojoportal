@@ -2,9 +2,9 @@ using mojoPortal.Business.WebHelpers;
 using mojoPortal.Web.Framework;
 using Resources;
 using System;
+using System.IO;
 using System.Web;
 using System.Web.UI;
-
 namespace mojoPortal.Web.UI.Pages
 {
 	public partial class Help : Page
@@ -19,29 +19,38 @@ namespace mojoPortal.Web.UI.Pages
 		}
 
 
-		protected void Page_Load(object sender, EventArgs e)
-		{
-			if (Request.Params.Get("helpkey") != null)
-			{
-				helpKey = Request.Params.Get("helpkey");
-			}
+        protected void Page_Load(object sender, EventArgs e)
+        {
+            if (Request.Params.Get("helpkey") != null)
+            {
+                helpKey = Request.Params.Get("helpkey");
+                if (!string.IsNullOrEmpty(helpKey))
+                {
+                    // Sanitize helpKey to prevent path traversal
+                    helpKey = Path.GetFileName(helpKey);
+                    foreach (char c in Path.GetInvalidFileNameChars())
+                    {
+                        helpKey = helpKey.Replace(c, '_');
+                    }
+                }
+            }
 
-			if (Request.Params.Get("e") == null)
-			{
-				if (WebUser.IsAdminOrContentAdmin)
-				{
-					if (helpKey != string.Empty)
-					{
-						litEditLink.Text = $"<a href=\"{SiteUtils.GetNavigationSiteRoot()}/HelpEdit.aspx?helpkey={SecurityHelper.RemoveMarkup(helpKey)}\">{Resource.HelpEditLink}</a>";
-					}
-				}
-			}
+            if (Request.Params.Get("e") == null)
+            {
+                if (WebUser.IsAdminOrContentAdmin)
+                {
+                    if (helpKey != string.Empty)
+                    {
+                        litEditLink.Text = $"<a href=\"{SiteUtils.GetNavigationSiteRoot()}/HelpEdit.aspx?helpkey={SecurityHelper.RemoveMarkup(helpKey)}\">{Resource.HelpEditLink}</a>";
+                    }
+                }
+            }
 
-			if (helpKey != string.Empty)
-			{
-				ShowHelp();
-			}
-		}
+            if (helpKey != string.Empty)
+            {
+                ShowHelp();
+            }
+        }
 
 
 		protected void ShowHelp()

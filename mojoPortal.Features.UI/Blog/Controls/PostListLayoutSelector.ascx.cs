@@ -115,7 +115,16 @@ namespace mojoPortal.Web.BlogUI
         }
         private List<FileInfo> GetLayouts(string path)
         {
-            DirectoryInfo dir = new DirectoryInfo(HttpContext.Current.Server.MapPath(path));
+            // Validate and sanitize path to prevent path traversal
+            string mappedPath = HttpContext.Current.Server.MapPath(path);
+            string fullPath = Path.GetFullPath(mappedPath);
+            string rootPath = HttpContext.Current.Server.MapPath("~/");
+            if (!fullPath.StartsWith(rootPath, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new UnauthorizedAccessException("Invalid layout path.");
+            }
+
+            DirectoryInfo dir = new DirectoryInfo(fullPath);
             List<FileInfo> files = new List<FileInfo>();
             if (dir.Exists)
             {

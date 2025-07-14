@@ -189,35 +189,55 @@ namespace mojoPortal.FileSystem
 
 		public bool FileExists(string virtualPath)
 		{
-			return File.Exists(MapPath(virtualPath));
+			string physicalPath = MapPath(virtualPath);
+			string fullPath = Path.GetFullPath(physicalPath);
+			string rootPath = Path.GetFullPath(HostingEnvironment.MapPath("~"));
+			if (!fullPath.StartsWith(rootPath, StringComparison.OrdinalIgnoreCase))
+			{
+				return false;
+			}
+			return File.Exists(fullPath);
 		}
-
-		public bool FolderExists(string virtualPath)
-		{
 			return Directory.Exists(MapPath(virtualPath));
 		}
 
-		public OpResult SaveFile(string virtualPath, Stream stream, string contentType, bool overWrite)
-		{
-			string fullPath = MapPath(virtualPath);
-			if (File.Exists(fullPath))
-			{
-				if (overWrite)
-					File.Delete(fullPath);
-				else
-					return OpResult.AlreadyExist;
-			}
+        public OpResult SaveFile(string virtualPath, Stream stream, string contentType, bool overWrite)
+        {
+            // Sanitize and validate virtual path to prevent path traversal
+            if (virtualPath.Contains(".."))
+            {
+                virtualPath = virtualPath.Replace("..", "");
+            }
 
-			using (stream)
-			{
-				using (Stream file = File.OpenWrite(fullPath))
-				{
-					CopyStream(stream, file);
-				}
-			}
+            string fullPath = MapPath(virtualPath);
 
-			return OpResult.Succeed;
-		}
+            // Ensure the resolved path is within the application root
+            string rootPath = HostingEnvironment.MapPath("~/");
+            string resolvedRootPath = Path.GetFullPath(rootPath);
+            string resolvedFullPath = Path.GetFullPath(fullPath);
+            if (!resolvedFullPath.StartsWith(resolvedRootPath, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new UnauthorizedAccessException("Attempted to access a path outside the application scope.");
+            }
+
+            if (File.Exists(fullPath))
+            {
+                if (overWrite)
+                    File.Delete(fullPath);
+                else
+                    return OpResult.AlreadyExist;
+            }
+
+            using (stream)
+            {
+                using (Stream file = File.OpenWrite(fullPath))
+                {
+                    CopyStream(stream, file);
+                }
+            }
+
+            return OpResult.Succeed;
+        }
 
 		public OpResult SaveFile(string virtualPath, HttpPostedFile file, bool overWrite)
 		{
@@ -312,33 +332,49 @@ namespace mojoPortal.FileSystem
 			{
 				return OpResult.AlreadyExist;
 			}
+        public IEnumerable<WebFile> GetFileList(string virtualPath)
+        {
+            string fullPath = MapPath(virtualPath);
+            
+            // Validate resolved path to prevent path traversal
+            string absolutePath;
+            try
+            {
+                absolutePath = Path.GetFullPath(fullPath);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+            string basePath = HostingEnvironment.MapPath("~/");
+            if (!absolutePath.StartsWith(basePath, StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
 
-			File.Copy(srcPath, destPath, overwrite);
-			return OpResult.Succeed;
-		}
+            if (!Directory.Exists(absolutePath)) { return null; }
+            int fullPathLen = absolutePath.Length + 1;
 
+            var filePaths = Directory.GetFiles(absolutePath);
+            var files = new List<WebFile>(filePaths.Length);
+            foreach (var filePath in filePaths)
+            {
+                FileInfo file = new FileInfo(filePath);
+                files.Add(new WebFile()
+                {
+                    VirtualPath = Path.Combine(virtualPath, file.Name),
+                    Path = file.FullName,
+                    FolderVirtualPath = virtualPath.Substring(0, virtualPath.LastIndexOf('/')),
+                    Name = file.Name,
+                    Size = file.Length,
+                    ContentType = GuessMime(file.Name),
+                    Created = file.CreationTimeUtc,
+                    Modified = file.LastWriteTimeUtc
+                });
 
-		public OpResult DeleteFile(string virtualPath)
-		{
-			string fullPath = MapPath(virtualPath);
-			if (!File.Exists(fullPath))
-				return OpResult.NotFound;
-
-			File.Delete(fullPath);
-			return OpResult.Succeed;
-		}
-
-		public IEnumerable<WebFile> GetFileList(string virtualPath)
-		{
-			string fullPath = MapPath(virtualPath);
-			
-			if (!Directory.Exists(fullPath)) { return null; }
-			int fullPathLen = fullPath.Length + 1;
-
-			var filePaths = Directory.GetFiles(fullPath);
-			var files = new List<WebFile>(filePaths.Length);
-			foreach (var filePath in filePaths)
-			{
+            }
+            return files;
+        }
 				FileInfo file = new FileInfo(filePath);
 				files.Add(new WebFile()
 				{
