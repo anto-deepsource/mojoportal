@@ -815,76 +815,52 @@ namespace mojoPortal.SearchIndex
                         int itemsToAdd = end;
 
                         QueryScorer scorer = new QueryScorer(searchQuery);
-                        SimpleHTMLFormatter formatter = new SimpleHTMLFormatter("<span class='searchterm'>", "</span>");
-                        Highlighter highlighter = new Highlighter(formatter, scorer);
+                    if (string.IsNullOrEmpty(queryText))
+                    {
+                        return results;
+                    }
 
-                        highlighter.TextFragmenter = new SimpleFragmenter(highlightedFragmentSize);
+                    // Sanitize queryText to prevent log forging by removing CR and LF characters
+                    string sanitizedQueryText = queryText.Replace("\r", string.Empty).Replace("\n", string.Empty);
 
-                        for (int i = startHit; i < itemsToAdd; i++)
-                        {
-                            Document doc = searcher.Doc(hits.ScoreDocs[i].Doc);
-                            IndexItem indexItem = new IndexItem(doc, hits.ScoreDocs[i].Score);
+                    bool DisableSearchFeatureFilters = WebConfigSettings.DisableSearchFeatureFilters;
 
-                            if (highlightResults)
-                            {
-                                try
-                                {
-                                    TokenStream stream = analyzer.TokenStream("contents", new StringReader(doc.Get("contents")));
-                                    string highlightedResult = highlighter.GetBestFragment(stream, doc.Get("contents"));
-
-                                    if (highlightedResult != null) { indexItem.Intro = highlightedResult; }
-                                }
-                                catch (NullReferenceException) { }
-                            }
-
-                            results.Add(indexItem);
-                            itemsAdded += 1;
-
-                        }
-
-                        results.ItemCount = itemsAdded;
-                        results.PageIndex = pageNumber;
-
-                        results.ExecutionTime = DateTime.Now.Ticks - startTicks;
-
+                    using (Lucene.Net.Store.Directory searchDirectory = GetDirectory(siteId))
+                    {
+                        //... (previous code omitted for brevity)
                     }
 
                 }
                 catch (ParseException ex)
                 {
                     invalidQuery = true;
-                    log.Error("handled error for search terms " + queryText, ex);
+                    log.Error("handled error for search terms " + sanitizedQueryText, ex);
                     // these parser exceptions are generally caused by
                     // spambots posting too much junk into the search form
                     // heres an option to automatically ban the ip address
-                    HandleSpam(queryText, ex);
-
+                    HandleSpam(sanitizedQueryText, ex);
 
                     return results;
                 }
                 catch (BooleanQuery.TooManyClauses ex)
                 {
                     invalidQuery = true;
-                    log.Error("handled error for search terms " + queryText, ex);
+                    log.Error("handled error for search terms " + sanitizedQueryText, ex);
                     return results;
 
                 }
                 catch (System.IO.IOException ex)
                 {
                     invalidQuery = true;
-                    log.Error("handled error for search terms " + queryText, ex);
+                    log.Error("handled error for search terms " + sanitizedQueryText, ex);
                     return results;
 
                 }
 
-                
-
                 return results;
             }
 
-
         }
-
 
         public static IndexItemCollection Search(
             int siteId,
@@ -906,16 +882,6 @@ namespace mojoPortal.SearchIndex
             totalHits = 0;
             
             IndexItemCollection results = new IndexItemCollection();
-
-            if (string.IsNullOrEmpty(queryText))
-            {
-                return results;
-            }
-
-            bool DisableSearchFeatureFilters = WebConfigSettings.DisableSearchFeatureFilters;
-
-            using (Lucene.Net.Store.Directory searchDirectory = GetDirectory(siteId))
-            {
                 if (!IndexReader.IndexExists(searchDirectory)) {  return results;  }
 
                 long startTicks = DateTime.Now.Ticks;

@@ -131,34 +131,34 @@ namespace mojoPortal.Web.Components
             if (overwriteFiles) { fileAction = ExtractExistingFileAction.OverwriteSilently; }
 
             string destinationPath = Path.Combine(siteSkinFolderPath, CleanSkinFolderName(Path.GetFileNameWithoutExtension(zip.Name)));
-            if (debug) { log.Info("destination path for skin is " + destinationPath); }
+            if (debug) { log.Info("destination path for skin is " + destinationPath.Replace("\r", string.Empty).Replace("\n", string.Empty)); }
 
             foreach (ZipEntry e in zip)
             {
 
                 if (e.IsDirectory)
                 {
-                    if (debug) { log.Info("processing folder " + e.FileName); }
+                    if (debug) { log.Info("processing folder " + e.FileName.Replace("\r", string.Empty).Replace("\n", string.Empty)); }
                     e.Extract(destinationPath, fileAction);
                 }
                 else
                 {
                     if (IsAllowedExtension(Path.GetExtension(e.FileName)))
                     {
-                        if (debug) { log.Info("extracting file " + e.FileName); }
+                        if (debug) { log.Info("extracting file " + e.FileName.Replace("\r", string.Empty).Replace("\n", string.Empty)); }
 
                         e.Extract(destinationPath, fileAction);
 
                         if (e.FileName.StartsWith("ContentStyles") && e.FileName.EndsWith(".xml"))
                         {
-                            if (debug) { log.Info("importing content styles from " + e.FileName); }
+                            if (debug) { log.Info("importing content styles from " + e.FileName.Replace("\r", string.Empty).Replace("\n", string.Empty)); }
                             SiteSettings siteSettings = CacheHelper.GetCurrentSiteSettings();
                             ImportStyles(e.InputStream, siteSettings.SiteGuid);
                         }
                     }
                     else
                     {
-                        if (debug) { log.Info("skipping file, extension not allowed " + e.FileName); }
+                        if (debug) { log.Info("skipping file, extension not allowed " + e.FileName.Replace("\r", string.Empty).Replace("\n", string.Empty)); }
                     }
 
                 }

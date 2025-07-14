@@ -97,6 +97,10 @@ namespace mojoPortal.Web.SearchUI
         {
             queryErrorOccurred = false;
 
+            string rawQuery = txtSearch.Text ?? string.Empty;
+            // Remove CR and LF to prevent log forging
+            string sanitizedQuery = rawQuery.Replace("\r", " ").Replace("\n", " ").Trim();
+
             mojoPortal.SearchIndex.IndexItemCollection searchResults = mojoPortal.SearchIndex.IndexHelper.Search(
                 siteSettings.SiteId,
                 isSiteEditor,
@@ -104,7 +108,7 @@ namespace mojoPortal.Web.SearchUI
                 config.GetFeatureGuids(),
                 modifiedBeginDate,
                 modifiedEndDate,
-                txtSearch.Text,
+                sanitizedQuery,
                 WebConfigSettings.EnableSearchResultsHighlighting,
                 WebConfigSettings.SearchResultsFragmentSize,
                 pageNumber,

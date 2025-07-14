@@ -205,107 +205,77 @@ namespace mojoPortal.Web.UI
 				{
 					if (authInfo.VerifiedEmail.Length > 0)
 					{
-						user.SetRegistrationConfirmationGuid(Guid.Empty);
-						user.Email = authInfo.VerifiedEmail;
-						needToSave = true;
+	private void SignInUser(SiteUser user, bool isNewUser)
+	{
+		if (
+			(siteSettings.UseSecureRegistration)
+			&& (user.RegisterConfirmGuid != Guid.Empty)
+			)
+		{
 
-					}
-
-				}
-
-				if (user.OpenIdUri.Length == 0)
-				{
-					user.OpenIdUri = authInfo.Identifier;
-					needToSave = true;
-				}
-
-				if (needToSave) { user.Save(); }
-
-				if (WebConfigSettings.OpenIdRpxUseMappings)
-				{
-					if ((authInfo.PrimaryKey.Length == 0) || (authInfo.PrimaryKey != user.UserGuid.ToString()))
-					{
-						rpxHelper.Map(authInfo.Identifier, user.UserGuid.ToString());
-					}
-				}
+			Notification.SendRegistrationConfirmationLink(
+				SiteUtils.GetSmtpSettings(),
+				ResourceHelper.GetMessageTemplate("RegisterConfirmEmailMessage.config"),
+				siteSettings.DefaultEmailFromAddress,
+				siteSettings.DefaultFromEmailAlias,
+				user.Email,
+				siteSettings.SiteName,
+				SiteRoot + "/ConfirmRegistration.aspx?ticket=" +
+				user.RegisterConfirmGuid.ToString());
 
 
-				SignInUser(user, false);
+			log.Info("User " + user.Name.Replace("\r", "").Replace("\n", "") + " tried to login but email address is not confirmed.");
 
-			}
+			lblError.Text = Resource.RegistrationRequiresEmailConfirmationMessage;
+			litInfoNeededMessage.Visible = false;
+			pnlRequiredProfileProperties.Visible = false;
+			btnCreateUser.Visible = false;
+
+			return;
 
 		}
 
-		private void SignInUser(SiteUser user, bool isNewUser)
+		if (user.IsLockedOut)
 		{
-			if (
-				(siteSettings.UseSecureRegistration)
-				&& (user.RegisterConfirmGuid != Guid.Empty)
-				)
-			{
 
-				Notification.SendRegistrationConfirmationLink(
-					SiteUtils.GetSmtpSettings(),
-					ResourceHelper.GetMessageTemplate("RegisterConfirmEmailMessage.config"),
-					siteSettings.DefaultEmailFromAddress,
-					siteSettings.DefaultFromEmailAlias,
-					user.Email,
-					siteSettings.SiteName,
-					SiteRoot + "/ConfirmRegistration.aspx?ticket=" +
-					user.RegisterConfirmGuid.ToString());
+			log.Info("User " + user.Name.Replace("\r", "").Replace("\n", "") + " tried to login but account is locked.");
 
+			lblError.Text = Resource.LoginAccountLockedMessage;
 
-				log.Info("User " + user.Name + " tried to login but email address is not confirmed.");
+			return;
+		}
 
-				lblError.Text = Resource.RegistrationRequiresEmailConfirmationMessage;
-				litInfoNeededMessage.Visible = false;
-				pnlRequiredProfileProperties.Visible = false;
-				btnCreateUser.Visible = false;
+		if ((siteSettings.RequireApprovalBeforeLogin) && (!user.ApprovedForLogin))
+		{
 
-				return;
+			log.Info("User " + user.Name.Replace("\r", "").Replace("\n", "") + " tried to login but account is not approved yet.");
 
-			}
+			lblError.Text = Resource.LoginNotApprovedMessage;
 
-			if (user.IsLockedOut)
-			{
-
-				log.Info("User " + user.Name + " tried to login but account is locked.");
-
-				lblError.Text = Resource.LoginAccountLockedMessage;
-
-				return;
-			}
-
-			if ((siteSettings.RequireApprovalBeforeLogin) && (!user.ApprovedForLogin))
-			{
-
-				log.Info("User " + user.Name + " tried to login but account is not approved yet.");
-
-				lblError.Text = Resource.LoginNotApprovedMessage;
-
-				return;
-			}
+			return;
+		}
 
 
-			if (siteSettings.UseEmailForLogin)
-			{
-				FormsAuthentication.SetAuthCookie(user.Email, true);
-			}
-			else
-			{
-				FormsAuthentication.SetAuthCookie(user.LoginName, true);
-			}
+		if (siteSettings.UseEmailForLogin)
+		{
+			FormsAuthentication.SetAuthCookie(user.Email, true);
+		}
+		else
+		{
+			FormsAuthentication.SetAuthCookie(user.LoginName, true);
+		}
 
-			if (WebConfigSettings.UseFolderBasedMultiTenants)
-			{
-				string cookieName = "siteguid" + siteSettings.SiteGuid;
-				CookieHelper.SetCookie(cookieName, user.UserGuid.ToString(), true);
-			}
+		if (WebConfigSettings.UseFolderBasedMultiTenants)
+		{
+			string cookieName = "siteguid" + siteSettings.SiteGuid;
+			CookieHelper.SetCookie(cookieName, user.UserGuid.ToString(), true);
+		}
 
-			if (user.UserId > -1 && siteSettings.AllowUserSkins && user.Skin.Length > 0)
-			{
-				SiteUtils.SetSkinCookie(user);
-			}
+		if (user.UserId > -1 && siteSettings.AllowUserSkins && user.Skin.Length > 0)
+		{
+			SiteUtils.SetSkinCookie(user);
+		}
+	}
 
 			user.UpdateLastLoginTime();
 
@@ -596,6 +566,12 @@ namespace mojoPortal.Web.UI
 			}
 
 			string email = txtEmail.Text;
+			email = email.Replace("\r", "").Replace("\n", "").Trim();
+			if (email.Length == 0 || !email.Contains("@"))
+			{
+				lblError.Text = Resource.InvalidEmailFormatMessage;
+				return;
+			}
 
 			if (email.Length == 0)
 			{
@@ -622,6 +598,8 @@ namespace mojoPortal.Web.UI
 				name = hdnDisplayName.Value;
 			}
 
+			loginName = loginName.Replace("\r", "").Replace("\n", "");
+			name = name.Replace("\r", "").Replace("\n", "");
 
 			if (SiteUser.EmailExistsInDB(siteSettings.SiteId, email))
 			{

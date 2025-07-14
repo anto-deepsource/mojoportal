@@ -1949,18 +1949,24 @@ namespace mojoPortal.Web
 					var userId = Convert.ToInt32(row["UserID"]);
 					var oldPassword = row["Pwd"].ToString();
 					var salt = row["PasswordSalt"].ToString();
-					string clearPassword;
+					string clearPasswordTemp;
+					char[] clearPassword;
 
 					if (salt.Length > 0)
 					{
-						clearPassword = UnencodePassword(oldPassword, MembershipPasswordFormat.Encrypted).Replace(salt, string.Empty);
+						clearPasswordTemp = UnencodePassword(oldPassword, MembershipPasswordFormat.Encrypted).Replace(salt, string.Empty);
 					}
 					else
 					{
-						clearPassword = UnencodePassword(oldPassword, MembershipPasswordFormat.Encrypted);
+						clearPasswordTemp = UnencodePassword(oldPassword, MembershipPasswordFormat.Encrypted);
 					}
 
-					SiteUser.UpdatePasswordAndSalt(userId, (int)MembershipPasswordFormat.Clear, clearPassword, string.Empty);
+					clearPassword = clearPasswordTemp.ToCharArray();
+
+					SiteUser.UpdatePasswordAndSalt(userId, (int)MembershipPasswordFormat.Clear, new string(clearPassword), string.Empty);
+
+					Array.Clear(clearPassword, 0, clearPassword.Length);
+					clearPasswordTemp = null;
 				}
 				catch (Exception ex)
 				{
